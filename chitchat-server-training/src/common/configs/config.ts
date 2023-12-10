@@ -3,7 +3,7 @@ import * as process from 'process';
 
 const config: Config = {
   nest: {
-    port: 5000,
+    port: 5001,
     prefix: '/api',
   },
   cors: {
@@ -18,9 +18,10 @@ const config: Config = {
     server: '/training',
   },
   security: {
-    expiresIn: '2m',
+    expiresIn: '15d',
     refreshIn: '7d',
     bcryptSaltOrRound: 10,
+    jwtSecretKey: process.env.JWT_SECRET_KEY,
   },
   mail: {
     mailHost: process.env.MAIL_HOST,

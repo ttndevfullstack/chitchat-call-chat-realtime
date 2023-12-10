@@ -1,14 +1,14 @@
 import axios from 'axios';
 import { stringify } from 'qs';
 
-export default defineNuxtPlugin(() => {
+const useAxiosClient = () => {
   const runtimeConfig = useRuntimeConfig();
   const baseUrl = runtimeConfig.public.apiBase;
 
   const client = axios.create({
     baseURL: baseUrl,
     timeout: 10000,
-    withCredentials: true,
+    // withCredentials: true,
   });
 
   client.interceptors.request.use((config) => {
@@ -24,25 +24,7 @@ export default defineNuxtPlugin(() => {
     return config;
   });
 
-  client.interceptors.response.use(
-    (response) => {
-      return response;
-    },
-    (error) => {
-      const { signOut } = useAuth();
+  return client;
+};
 
-      const status = error.response?.status;
-      if (status === 401) {
-        signOut({ callbackUrl: '/auth/login' });
-      }
-
-      throw error;
-    },
-  );
-
-  return {
-    provide: {
-      axios: client,
-    },
-  };
-});
+export default useAxiosClient;

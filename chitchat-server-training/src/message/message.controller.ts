@@ -1,19 +1,29 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { MessageService } from './message.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('message')
 export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
-  @Post()
-  create(@Body() createMessageDto: CreateMessageDto) {
-    return this.messageService.create(createMessageDto);
-  }
-
   @Get(':chatroomId')
   findAllByChatroomId(@Param('chatroomId') chatroomId: string) {
     return this.messageService.findAllByChatroomId(chatroomId);
+  }
+
+  @Post('send')
+  sendMessage(@Body() createMessageDto: CreateMessageDto) {
+    return this.messageService.create(createMessageDto);
   }
 
   @Delete(':id')

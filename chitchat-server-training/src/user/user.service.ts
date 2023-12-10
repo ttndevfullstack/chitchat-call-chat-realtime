@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as bcrypt from 'bcrypt';
 import {
   NotFoundException,
@@ -10,19 +11,48 @@ import config from 'src/common/configs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schema/user.schema';
 import { Model } from 'mongoose';
+import { UpdateStatusDto } from './dto/update-status.dto';
 
 @Injectable()
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  public async findByEmail(email: string) {
-    const user = await this.userModel.findOne({ email: email.toString() });
+  public async findUserByToken(id: string) {
+    const user = await this.userModel.findOne({ _id: id });
     if (!user) throw new NotFoundException('User not found');
+
+    const { password, ...result } = user.toObject();
 
     return {
       status: 201,
       success: true,
-      data: user,
+      data: result,
+    };
+  }
+
+  public async findById(id: string) {
+    const user = await this.userModel.findOne({ _id: id });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { password, ...result } = user.toObject();
+
+    return {
+      status: 201,
+      success: true,
+      data: result,
+    };
+  }
+
+  public async findByEmail(email: string) {
+    const user = await this.userModel.findOne({ email: email.toString() });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { password, ...result } = user.toObject();
+
+    return {
+      status: 201,
+      success: true,
+      data: result,
     };
   }
 
@@ -52,6 +82,25 @@ export class UserService {
       status: 201,
       success: true,
       data: createdUser,
+    };
+  }
+
+  public async updateStatus(updateStatus: UpdateStatusDto) {
+    const user = await this.userModel.findOneAndUpdate({
+      email: updateStatus.email,
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    user.status = updateStatus.status;
+    await user.save();
+
+    const { password, ...result } = user.toObject();
+
+    return {
+      status: 201,
+      success: true,
+      data: result,
     };
   }
 

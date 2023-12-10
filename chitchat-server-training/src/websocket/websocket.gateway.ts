@@ -7,43 +7,70 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { AuthService } from 'src/auth/auth.service';
+import { ChannelService } from 'src/channel/channel.service';
 
 @WebSocketGateway({ namespace: 'events' })
 export class WebsocketGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly channelService: ChannelService,
+  ) {}
+
   @WebSocketServer()
   server: Server;
 
+  @SubscribeMessage('connect')
   public async handleConnection(client: Socket) {
-    // Handle new WebSocket connections
+    let isVerified;
+
+    const token = client.handshake.query.token.toString();
+    if (token) {
+      isVerified = await this.authService.verifyToken(token);
+    }
+
+    if (!isVerified) return client.disconnect();
     console.log(`Client connected: ${client.id}`);
   }
 
+  @SubscribeMessage('disconnect')
   public async handleDisconnect(client: Socket) {
-    // Handle WebSocket disconnections
     client.disconnect();
     console.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('offer')
   public async handleOffer(@MessageBody() data: any) {
-    // Handle offer from client
-    // Broadcast offer to other clients or handle accordingly for WebRTC signaling
+    console.log('offer:', data);
     this.server.emit('offer', data);
   }
 
   @SubscribeMessage('answer')
   public async handleAnswer(@MessageBody() data: any) {
-    // Handle answer from client
-    // Broadcast answer to other clients or handle accordingly for WebRTC signaling
+    console.log('answer:', data);
     this.server.emit('answer', data);
   }
 
   @SubscribeMessage('iceCandidate')
-  public async handleIceCandidate(client: Socket, @MessageBody() data: any) {
-    // Handle ICE candidate from client
-    // Broadcast ICE candidate to other clients or handle accordingly for WebRTC signaling
+  public async handleIceCandidate(@MessageBody() data: any) {
+    console.log('answer:', data);
     this.server.emit('iceCandidate', data);
+  }
+
+  @SubscribeMessage('member_joined')
+  public async handleEvent(@MessageBody() data: any) {
+    this.server.emit('member_joined', data);
+  }
+
+  @SubscribeMessage('member_left')
+  public async handleMemberLeft(@MessageBody() data: any) {
+    this.server.emit('member_left', data);
+  }
+
+  @SubscribeMessage('message_from_peer')
+  public async handleMessageFromPeer(@MessageBody() data: any) {
+    this.server.emit('message_from_peer', data);
   }
 }

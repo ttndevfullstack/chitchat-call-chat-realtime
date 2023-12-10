@@ -8,16 +8,17 @@ import { UpdateChatroomDto } from './dto/update-chatroom.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Chatroom } from 'src/schema/chatroom.schema';
 import { Model } from 'mongoose';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class ChatroomService {
   constructor(
     @InjectModel(Chatroom.name) private chatroomModel: Model<Chatroom>,
+    private readonly userService: UserService,
   ) {}
 
   public async findOneById(id: string) {
     const chatroom = await this.chatroomModel.findOne({ _id: id });
-    console.log(chatroom);
 
     if (!chatroom) throw new NotFoundException('Chat room not found');
 
@@ -28,11 +29,12 @@ export class ChatroomService {
     };
   }
 
-  public async findAll() {
-    const chatroomList = await this.chatroomModel.find({});
-
-    if (!chatroomList)
-      throw new BadRequestException('Get chatroom list failure');
+  public async findAllByEmail(email: string) {
+    // test
+    const username = email.split('@')[0];
+    const chatroomList = await this.chatroomModel.find({
+      $or: [{ roomMaster: username }, { members: { $in: [username] } }],
+    });
 
     return {
       status: 201,
@@ -42,9 +44,19 @@ export class ChatroomService {
   }
 
   public async create(createChatroomDto: CreateChatroomDto) {
-    console.log(createChatroomDto);
+    let chatroomName;
 
-    const createdChatroom = new this.chatroomModel(createChatroomDto);
+    if (!createChatroomDto.name) {
+      createChatroomDto.members.forEach(
+        (member) => chatroomName + ', ' + member.toString(),
+      );
+    }
+
+    const createdChatroom = new this.chatroomModel({
+      ...createChatroomDto,
+      name: createChatroomDto.name || chatroomName,
+    });
+
     await createdChatroom.save();
 
     if (!createdChatroom)
@@ -54,6 +66,52 @@ export class ChatroomService {
       status: 201,
       success: true,
       data: createdChatroom,
+    };
+  }
+
+  public async joinChatRoom(chatroomId: string, email: string) {
+    const chatroom = await this.chatroomModel.findOne({ _id: chatroomId });
+    if (!chatroom) throw new NotFoundException('Chat room not found');
+
+    await this.userService.findByEmail(email);
+
+    const updatedChatroom = await this.chatroomModel.findByIdAndUpdate(
+      chatroom._id,
+      {
+        members: { ...chatroom.members, email },
+      },
+      { new: true },
+    );
+
+    // websocket answer
+
+    return {
+      status: 201,
+      success: true,
+      data: updatedChatroom,
+    };
+  }
+
+  public async leaveChatRoom(chatroomId: string, email: string) {
+    const chatroom = await this.chatroomModel.findOne({ _id: chatroomId });
+    if (!chatroom) throw new NotFoundException('Chat room not found');
+
+    await this.userService.findByEmail(email);
+
+    const updatedChatroom = await this.chatroomModel.findByIdAndUpdate(
+      chatroom._id,
+      {
+        members: chatroom.members.filter((member) => member !== email),
+      },
+      { new: true },
+    );
+
+    // websocket answer
+
+    return {
+      status: 201,
+      success: true,
+      data: updatedChatroom,
     };
   }
 

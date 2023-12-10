@@ -1,7 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
+import { MessageType } from 'src/common/enums/enums';
 
-export type ProductDocument = HydratedDocument<Message>;
+export type MessageDocument = HydratedDocument<Message>;
 
 @Schema({ timestamps: true })
 export class Message {
@@ -11,18 +12,21 @@ export class Message {
   @Prop({ type: String, ref: 'User', required: true })
   sender: string;
 
+  @Prop({ type: String, required: true })
+  type: MessageType;
+
   @Prop({
     type: String,
     ref: 'Chatroom',
     required: true,
   })
-  chatroomId: mongoose.Schema.Types.ObjectId;
+  chatroom_id: mongoose.Schema.Types.ObjectId;
 
   @Prop({ default: false, select: false })
-  isDelete: boolean;
+  is_delete: boolean;
 
   @Prop({ default: false, select: false })
-  isRecall: boolean;
+  is_recall: boolean;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

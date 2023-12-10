@@ -1,28 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Jost:wght@100;200;300;400;500;600;700;800;900&family=Source+Sans+3:wght@200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600;700;800;900&family=Roboto:wght@100;300;400;500;700;900&display=swap');
 @import 'variables';
 @import 'animations/transitions';
 
-:root {
+#scrollbar::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
 }
 
-// components
-// component::scrollbar
-// components
-::-webkit-scrollbar {
-  width: 16px;
+#scrollbar::-webkit-scrollbar {
+  width: 4px;
+  background-color: #f7f8f9;
 }
-::-webkit-scrollbar-track {
-  background: theme('colors.gray.100');
-  border-left: 1px solid theme('colors.gray.200');
+
+#scrollbarLg::-webkit-scrollbar {
+  width: 10px;
 }
-::-webkit-scrollbar-thumb {
-  border: 4px solid theme('colors.gray.100');
-  background-clip: padding-box;
-  border-radius: 9999px;
-  background-color: theme('colors.slate.300');
+
+#scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d6eaf7;
 }
-::-webkit-scrollbar-thumb:hover {
-  background-color: theme('colors.slate.400');
+#scrollbarLg::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: #f6f6f6;
 }
 
 html {
@@ -44,12 +42,42 @@ body {
 h1,
 h2,
 h3,
-h4,
-h5,
-h6 {
-  font-family: 'Source Sans 3', sans-serif;
+h5 {
+  font-family: 'Montserrat', sans-serif;
+  color: var(--system_title_color);
 }
 
-.login-banner-background {
-  background: linear-gradient(180deg, rgba(255, 234, 239, 0.1), rgba(64, 232, 221, 0.1));
+h4,
+h6,
+p,
+b,
+span {
+  font-family: 'Roboto', sans-serif;
+}
+
+h2 {
+  font-size: 25.3855px;
+  font-weight: 800;
+  color: var(--system_title_color);
+}
+
+h4 {
+  font-size: 15.3464px;
+  font-weight: 400;
+}
+
+h5 {
+  font-size: 13.6732px;
+  font-weight: 700;
+}
+
+h6 {
+  font-size: 11.6732px;
+  font-weight: 600;
+  color: var(--system_text_color);
+}
+
+span {
+  font-size: 11.6732px;
+  font-weight: 400;
 }

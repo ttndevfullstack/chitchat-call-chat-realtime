@@ -28,6 +28,7 @@ export interface SecurityConfig {
   expiresIn: string;
   refreshIn: string;
   bcryptSaltOrRound: string | number;
+  jwtSecretKey: string;
 }
 
 export interface MailConfig {

@@ -1,11 +1,15 @@
 import { IsNotEmpty } from 'class-validator';
-import { Chatroom } from 'src/schema/chatroom.schema';
-import { User } from 'src/schema/user.schema';
 
 export class CreateMessageDto {
   @IsNotEmpty()
   content: string;
+
   @IsNotEmpty()
-  sender: User;
-  chatroomId: Chatroom;
+  sender: string;
+
+  @IsNotEmpty()
+  type: string;
+
+  @IsNotEmpty()
+  chatroom_id: string;
 }

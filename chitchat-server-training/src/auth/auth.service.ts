@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as bcrypt from 'bcrypt';
 import {
   Injectable,
@@ -10,10 +11,27 @@ import { LoginAuthDto } from './dto/login-auth';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schema/user.schema';
 import { Model } from 'mongoose';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
+  constructor(
+    @InjectModel(User.name) private userModel: Model<User>,
+    private jwtService: JwtService,
+  ) {}
+
+  public async verifyToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET_KEY,
+      });
+
+      const user = await this.userModel.findOne({ _id: payload.sub });
+      return user;
+    } catch {
+      return false;
+    }
+  }
 
   public async register(registerAuthDto: RegisterAuthDto) {
     const user = await this.userModel.findOne({ email: registerAuthDto.email });
@@ -28,12 +46,26 @@ export class AuthService {
     const registeredUser = new this.userModel(registerAuthDto);
     await registeredUser.save();
 
-    const { password, ...result } = Object.assign(registeredUser);
+    const payload = {
+      sub: registeredUser._id,
+      username: registeredUser.username,
+      email: registeredUser.email,
+      role: registeredUser.role,
+    };
+
+    const access_token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET_KEY,
+      expiresIn: config().security.expiresIn,
+    });
+
+    const { password, ...result } = registeredUser.toObject();
 
     return {
       status: 201,
       success: true,
-      data: result,
+      access_token,
+      token_type: 'Bearer',
+      data: { user: result },
     };
   }
 
@@ -42,22 +74,35 @@ export class AuthService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    const saltOrRounds = config().security.bcryptSaltOrRound;
-    const hash = await bcrypt.hash(loginAuthDto.password, saltOrRounds);
+    const matched = await bcrypt.compare(loginAuthDto.password, user.password);
 
-    if (user.password !== hash)
+    if (!matched)
       return {
         status: 401,
         success: false,
         message: 'Password is not match',
       };
 
-    const { password, ...result } = Object.assign(user);
+    const payload = {
+      sub: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    };
+
+    const access_token = await this.jwtService.signAsync(payload, {
+      secret: process.env.JWT_SECRET_KEY,
+      expiresIn: config().security.expiresIn,
+    });
+
+    const { password, ...result } = user.toObject();
 
     return {
       status: 201,
       success: true,
-      data: result,
+      access_token,
+      token_type: 'Bearer',
+      data: { user: result },
     };
   }
 

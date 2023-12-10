@@ -1,6 +1,8 @@
 import { resolve } from 'path';
+import { Server } from 'socket.io';
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  ssr: false,
   devtools: { enabled: true },
   postcss: {
     plugins: {
@@ -14,12 +16,37 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.BASE_API_URL,
       origin: process.env.ORIGIN_URL,
+      websocket: process.env.SOCKET_URL,
     },
   },
 
-  modules: ['nuxt-socket-io', 'socket.io-client'],
+  app: {
+    head: {
+      title: 'Chitchat - chat messenger everywhere',
+      meta: [
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content',
+        },
+      ],
+    },
+    pageTransition: { name: 'page', type: 'animation' },
+    layoutTransition: { name: 'layout', type: 'animation' },
+  },
 
-  // Socket io config
+  modules: ['nuxt-socket-io', '@sidebase/nuxt-auth', 'nuxt-icon'],
+
+  // Sidebar Auth Config
+  auth: {
+    isEnabled: true,
+    globalAppMiddleware: true,
+    baseURL: process.env.BASE_API_AUTH,
+    provider: {
+      type: 'authjs',
+    },
+  },
+
+  // Socket IO Config
   io: {
     sockets: [
       {
@@ -29,17 +56,11 @@ export default defineNuxtConfig({
     ],
   },
 
-  app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
-    layoutTransition: { name: 'layout', mode: 'out-in' },
-  },
-
   css: [
     resolve('./assets/scss/_variables.scss'),
     resolve('./assets/scss/animations/_transitions.scss'),
     resolve('./assets/scss/app.scss'),
     resolve('./assets/scss/tailwindDefault.scss'),
+    'vue-final-modal/style.css',
   ],
-
-  plugins: ['@/plugins/axios', '@/plugins/api'],
 });

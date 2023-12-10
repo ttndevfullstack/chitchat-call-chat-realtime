@@ -12,5 +12,6 @@ import { ChatroomModule } from 'src/chatroom/chatroom.module';
   ],
   controllers: [MessageController],
   providers: [MessageService],
+  exports: [MessageService],
 })
 export class MessageModule {}

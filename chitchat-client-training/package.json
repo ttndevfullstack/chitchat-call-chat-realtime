@@ -5,15 +5,18 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:host": "nuxt --hostname '0' --port 8000",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
+    "@sidebase/nuxt-auth": "^0.6.1",
     "@types/qs": "^6.9.10",
     "autoprefixer": "^10.4.16",
     "nuxt": "^3.8.2",
+    "nuxt-icon": "^0.6.7",
     "postcss": "^8.4.31",
     "sass": "^1.69.5",
     "tailwindcss": "^3.3.5",
@@ -21,9 +24,11 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@types/socket.io-client": "^3.0.0",
     "axios": "^1.6.2",
+    "next-auth": "^4.21.1",
     "nuxt-socket-io": "^3.0.13",
     "qs": "^6.11.2",
-    "socket.io-client": "^4.7.2"
+    "vue-final-modal": "^4.4.6"
   }
 }
