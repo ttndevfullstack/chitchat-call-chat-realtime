@@ -22,6 +22,9 @@ export class User {
   @Prop({ default: false })
   status: UserStatus;
 
+  @Prop({ type: [String], default: [] })
+  friends: string[];
+
   @Prop({ require: true, default: Role.User })
   role: Role[];
 

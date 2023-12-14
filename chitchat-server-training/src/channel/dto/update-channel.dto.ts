@@ -1,4 +1,9 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateChannelDto } from './create-channel.dto';
+import { IsNotEmpty } from 'class-validator';
 
-export class UpdateChannelDto extends PartialType(CreateChannelDto) {}
+export class UpdateChannelDto {
+  @IsNotEmpty()
+  room_id: string;
+
+  @IsNotEmpty()
+  member: string;
+}

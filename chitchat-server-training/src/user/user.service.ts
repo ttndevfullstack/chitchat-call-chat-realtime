@@ -17,6 +17,21 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
+  public async updateStatus(email: string, status: string) {
+    const user = await this.userModel.findByIdAndUpdate(email, {
+      status: status,
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { password, ...result } = user.toObject();
+
+    return {
+      status: 201,
+      success: true,
+      data: result,
+    };
+  }
+
   public async findUserByToken(id: string) {
     const user = await this.userModel.findOne({ _id: id });
     if (!user) throw new NotFoundException('User not found');
@@ -44,7 +59,7 @@ export class UserService {
   }
 
   public async findByEmail(email: string) {
-    const user = await this.userModel.findOne({ email: email.toString() });
+    const user = await this.userModel.findOne({ email });
     if (!user) throw new NotFoundException('User not found');
 
     const { password, ...result } = user.toObject();
@@ -53,6 +68,28 @@ export class UserService {
       status: 201,
       success: true,
       data: result,
+    };
+  }
+
+  public async findFriends(email: string) {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException('User not found');
+
+    const friends = await this.userModel.find({ email: { $in: user.friends } });
+
+    return {
+      status: 201,
+      success: true,
+      data: friends,
+    };
+  }
+
+  public async findAllUserInRoom(members: string[]) {
+    const users = await this.userModel.find({ email: { $in: members } });
+    return {
+      status: 201,
+      success: true,
+      data: users,
     };
   }
 
@@ -82,25 +119,6 @@ export class UserService {
       status: 201,
       success: true,
       data: createdUser,
-    };
-  }
-
-  public async updateStatus(updateStatus: UpdateStatusDto) {
-    const user = await this.userModel.findOneAndUpdate({
-      email: updateStatus.email,
-    });
-
-    if (!user) throw new NotFoundException('User not found');
-
-    user.status = updateStatus.status;
-    await user.save();
-
-    const { password, ...result } = user.toObject();
-
-    return {
-      status: 201,
-      success: true,
-      data: result,
     };
   }
 

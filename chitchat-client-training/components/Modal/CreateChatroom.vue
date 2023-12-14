@@ -33,10 +33,10 @@ const emit = defineEmits<{
       </div>
 
       <div class="container">
-        <div id="scrollbarLg" class="floating-stack">
+        <div class="floating-stack">
           <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -46,7 +46,7 @@ const emit = defineEmits<{
 
           <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -56,7 +56,7 @@ const emit = defineEmits<{
 
           <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -66,7 +66,7 @@ const emit = defineEmits<{
 
           <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -76,7 +76,7 @@ const emit = defineEmits<{
 
           <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -84,9 +84,9 @@ const emit = defineEmits<{
             </div>
           </div>
 
-          <div class="flexStart gap-2 px-3 py-1 bg-white hover:bg-[#e5edf5]">
+          <div class="flexStart gap-4 px-3 py-1 bg-white hover:bg-[#e5edf5]">
             <div class="w-[42px] h-[42px] rounded-full overflow-hidden">
-              <img src="~/public/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
+              <img src="/default-avata.webp" alt="Avatar.png" class="object-cover w-full h-full" />
             </div>
             <div class="flex flex-col">
               <h3 class="font-semibold text-sm text-title leading-5">Trung Nghia</h3>
@@ -219,6 +219,7 @@ const emit = defineEmits<{
   border-radius: 10px;
   overflow-y: auto;
   border: 1.5px solid #ecedec;
+  scroll-behavior: smooth;
 }
 
 .floating-stack > dl {

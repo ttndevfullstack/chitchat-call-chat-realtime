@@ -1,183 +1,148 @@
 <script lang="js" setup>
-import useApi from '@/plugins/api';
 import { io as sio } from 'socket.io-client';
-const { data } = useAuth();
+import { servers } from '@/constants/constants'
 
 // Connect Socket IO
+const { data } = useAuth();
+const route = useRoute()
+const router = useRouter()
 const runtimeConfig = useRuntimeConfig();
 const ws_url = runtimeConfig.public.websocket;
 const io = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
-
-const $api = useApi();
+console.log(data.value);
 
 let localStream;
 let remoteStream;
-let peerConnections = {};
-let uid = String(Math.floor(Math.random() * 10000))
+const peerConnection = ref();
+const email = data?.value?.user?.email;
+const room_id = route?.params?.id;
+const uid = String(Math.floor(Math.random() * 10000));
 
 const constraints = {
   video: true,
   // audio: true,
 };
 
-const servers = {
-  iceServers: [
-    {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    },
-  ],
-};
-
-// checkRoomId()
-
-let init = async () => {
-  console.log('init');
-
-  io.on('member_joined', data => handleUserJoined(data));
+const makeCall = async () => {
+  // validateUser(room_id);
+  io.on('member_joined', data => handleUserJoined(JSON.parse(data.text)));
   io.on('member_left', data => handleUserLeft(data));
   io.on('message_from_peer', data => handleMessageFromPeer(data));
 
   localStream = await navigator.mediaDevices.getUserMedia(constraints);
   document.getElementById('user-1').srcObject = localStream;
 
-  const email = data?.value?.user?.email;
-  if (!email) console.error('User email not available');
+  if (!email || !room_id) return;
+  io.emit('member_joined', {
+    text: JSON.stringify({ 'email': uid, 'room_id': room_id })
+  });
+};
+makeCall();
 
-  io.emit('member_joined', uid);
+const handleUserJoined = async (data) => {
+  console.log(data.email + ' joined to channel');
+  createOffer(data);
 };
 
-let handleUserJoined = async (email) => {
-  console.log('A new user join to chatroom:', email);
-  await createPeerConnection(email);
-  createOffer(email);
-};
-
-let handleUserLeft = (email) => {
-  if (peerConnections[email]) {
-    peerConnections[email].close();
-    delete peerConnections[email];
-  }
+const handleUserLeft = (email) => {
   console.log('User left the channel:', email);
-    document.getElementById('user-2').style.display = 'none'
-    document.getElementById('user-1').classList.remove('smallFrame')
+  document.getElementById('user-2').style.display = 'none'
+  document.getElementById('user-1').classList.remove('smallFrame')
 }
 
-let handleMessageFromPeer = async (data) => {
+const handleMessageFromPeer = async (data) => {
   const message = JSON.parse(data.text);
   console.log(message)
   if(message?.type === 'offer') {
-    createAnswer(message.member_id, message.offer)
+    if (uid.includes(message.email)) return;
+    createAnswer(message)
   }
 
   if(message?.type === 'answer') {
-    addAnswer(data.member_id, message.answer)
+    addAnswer(message)
   }
 
   if(message?.type === 'candidate') {
-    if(peerConnections[data.member_id]) {
-      peerConnections[data.member_id].addIceCandidate(message.candidate)
+    if (uid.includes(message.email)) return;
+    if(peerConnection.value) {
+      peerConnection.value.addIceCandidate(message.candidate)
     }
   }
 }
 
-let createChannel = (id) => {
-  const newChannel = {
-    createdBy: data?.value?.user?.email,
-    members: [data?.value?.user?.email],
-  }
-  return $api.channel.createChannel(newChannel);
-}
-
-let joinChannel = (id, email) => {
-  if (!id || !data.value.user.email) return;
-  $api.channel.joinChannel(id, email)
-}
-
-let createOffer = async (email) => {
-  let peerConnection = peerConnections[email];
-  if (!peerConnection) {
-    await createPeerConnection(email);
-    peerConnection = peerConnections[email];
-  }
+const createOffer = async (data) => {
+  await createPeerConnection(data);
 
   try {
-    let offer = await peerConnection.createOffer();
-    await peerConnections[email].setLocalDescription(offer);
+    let offer = await peerConnection.value.createOffer();
+    await peerConnection.value.setLocalDescription(offer);
 
     io.emit('message_from_peer', {
-      text: JSON.stringify({ 'member_id': email, 'type': 'offer', 'offer': offer })
+      text: JSON.stringify({ 'email': data.email, 'room_id': data.room_id, 'type': 'offer', 'offer': offer })
     });
   } catch (error) {
     console.error('Error creating offer:', error);
   }
 };
 
-let createAnswer = async (email, offer) => {
-  if (!peerConnections[email]) {
-    await createPeerConnection(email);
-  }
+const createAnswer = async (message) => {
+  await createPeerConnection(message);
 
   try {
-    await peerConnections[email].setRemoteDescription(offer);
+    await peerConnection.value.setRemoteDescription(message.offer);
 
-    let answer = await peerConnections[email].createAnswer();
-    await peerConnections[email].setLocalDescription(answer);
+    const answer = await peerConnection.value.createAnswer();
+    await peerConnection.value.setLocalDescription(answer);
 
     io.emit('message_from_peer', {
-      text: JSON.stringify({ 'member_id': email, 'type':'answer', 'answer': answer })
+      text: JSON.stringify({ 'email': message.email, 'room_id': message.room_id, 'type': 'answer', 'answer': answer })
     });
   } catch (error) {
     console.error('Error creating answer:', error);
   }
 }
 
-let createPeerConnection = async (email) => {
-  let peerConnection = new RTCPeerConnection(servers);
-  peerConnections[email] = peerConnection;
+const createPeerConnection = async (message) => {
+  peerConnection.value = new RTCPeerConnection(servers);
 
+  remoteStream = new MediaStream()
   document.getElementById('user-2').srcObject = remoteStream
   document.getElementById('user-2').style.display = 'block'
   // document.getElementById('user-1').classList.add('smallFrame')
 
   if(!localStream){
-    localStream = await navigator.mediaDevices.getUserMedia({video:true, audio:false})
+    localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false })
     document.getElementById('user-1').srcObject = localStream
   }
 
-  if (localStream && peerConnections[email]) {
-    localStream.getTracks().forEach((track) => {
-      peerConnections[email].addTrack(track, localStream);
-    });
+  localStream.getTracks().forEach((track) => {
+    peerConnection.value.addTrack(track, localStream)
+  })
+
+  peerConnection.value.ontrack = (event) => {
+    event.streams[0].getTracks().forEach((track) => {
+      remoteStream.addTrack(track)
+    })
   }
 
-  peerConnections[email].ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => {
-      if (!remoteStream) {
-        remoteStream = new MediaStream();
-      }
-      remoteStream.addTrack(track);
-      document.getElementById('user-2').srcObject = remoteStream;
-    });
-  };
-
-  peerConnections[email].onicecandidate = async (event) => {
+  peerConnection.value.onicecandidate = async (event) => {
     if(event.candidate) {
       io.emit('message_from_peer', {
-        text: JSON.stringify({ 'member_id': email , 'type': 'candidate', 'candidate': event.candidate })
+        text: JSON.stringify({ 'email': message.email, 'room_id': message.room_id, 'type': 'candidate', 'candidate': event.candidate })
       })
     }
   }
 }
 
-let addAnswer = async (email, answer) => {
-  if (peerConnections[email] && !peerConnections[email].currentRemoteDescription) {
-    console.log('setRemoteDescription:', answer);
-    peerConnections[email].setRemoteDescription(answer);
+const addAnswer = async (message) => {
+  if (!peerConnection.value.currentRemoteDescription) {
+    console.log('setRemoteDescription:', message.answer);
+    peerConnection.value.setRemoteDescription(message.answer);
   }
 };
 
-let toggleCamera = async () => {
-    let videoTrack = localStream.getTracks().find(track => track.kind === 'video')
+const toggleCamera = async () => {
+    const videoTrack = localStream.getTracks().find(track => track.kind === 'video')
 
     if(videoTrack.enabled){
         videoTrack.enabled = false
@@ -188,8 +153,8 @@ let toggleCamera = async () => {
     }
 }
 
-let toggleMic = async () => {
-    let audioTrack = localStream.getTracks().find(track => track.kind === 'audio')
+const toggleMic = async () => {
+    const audioTrack = localStream.getTracks().find(track => track.kind === 'audio')
 
     if(audioTrack.enabled){
         audioTrack.enabled = false
@@ -200,20 +165,16 @@ let toggleMic = async () => {
     }
 }
 
-let leaveChannel = async () => {
-    io.emit('member_left', data.value.user.email)
-    await io.on('disconnect')
+const leaveChannel = async () => {
+  io.emit('member_left', data.value.user.email)
+  await io.on('disconnect')
 }
 
-let checkRoomId = () => {
-  const roomId = 111;
-  const urlParams = new URLSearchParams(window.location.search)
-  if (roomId !== Number(urlParams.get('room_id'))) return router.push('/john-room')
+const validateUser = (email, room_id) => {
+  if (!chatrooms.includes(room_id)) router.push('/join-room');
 }
 
 window.addEventListener('beforeunload', leaveChannel)
-
-init();
 </script>
 
 <template>

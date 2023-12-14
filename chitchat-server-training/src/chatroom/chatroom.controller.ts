@@ -18,14 +18,19 @@ import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
 export class ChatroomController {
   constructor(private readonly chatroomService: ChatroomService) {}
 
-  @Get(':chatroomId')
-  findById(@Param('chatroomId') chatroomId: string) {
-    return this.chatroomService.findOneById(chatroomId);
+  @Post('all')
+  findAllOfUser(@Body() params: any) {
+    return this.chatroomService.findAllByEmail(params);
   }
 
-  @Get('all/:email')
-  findAllOfUser(@Param('email') email: string) {
-    return this.chatroomService.findAllByEmail(email);
+  @Get('members/:chatroom_id')
+  findAllMember(@Param('chatroom_id') chatroom_id: string) {
+    return this.chatroomService.findAllMember(chatroom_id);
+  }
+
+  @Get(':chatroom_id')
+  findById(@Param('chatroom_id') chatroom_id: string) {
+    return this.chatroomService.findOneById(chatroom_id);
   }
 
   @Post()
@@ -33,17 +38,20 @@ export class ChatroomController {
     return this.chatroomService.create(createChatroomDto);
   }
 
-  @Patch('join/:chatroomId')
-  joinChatRoom(@Param('chatroomId') chatroomId: string, @Body() email: string) {
-    return this.chatroomService.joinChatRoom(chatroomId, email);
-  }
-
-  @Patch('leave/:chatroomId')
-  leaveChatRoom(
-    @Param('chatroomId') chatroomId: string,
+  @Patch('join/:chatroom_id')
+  joinChatRoom(
+    @Param('chatroom_id') chatroom_id: string,
     @Body() email: string,
   ) {
-    return this.chatroomService.leaveChatRoom(chatroomId, email);
+    return this.chatroomService.joinChatRoom(chatroom_id, email);
+  }
+
+  @Patch('leave/:chatroom_id')
+  leaveChatRoom(
+    @Param('chatroom_id') chatroom_id: string,
+    @Body() email: string,
+  ) {
+    return this.chatroomService.leaveChatRoom(chatroom_id, email);
   }
 
   @Patch(':id')

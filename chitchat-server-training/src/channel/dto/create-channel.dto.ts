@@ -5,5 +5,5 @@ export class CreateChannelDto {
   room_id: string;
 
   @IsNotEmpty()
-  member: string[];
+  members: string[];
 }

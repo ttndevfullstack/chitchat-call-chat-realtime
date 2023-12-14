@@ -1,9 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { ChatroomService } from './chatroom.service';
 import { ChatroomController } from './chatroom.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Chatroom, ChatroomSchema } from 'src/schema/chatroom.schema';
 
+@Global()
 @Module({
   imports: [
     MongooseModule.forFeature([

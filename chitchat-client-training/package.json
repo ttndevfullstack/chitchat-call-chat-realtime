@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
+    "@nuxt/image": "^1.1.0",
     "@sidebase/nuxt-auth": "^0.6.1",
     "@types/qs": "^6.9.10",
     "autoprefixer": "^10.4.16",
@@ -29,6 +30,9 @@
     "next-auth": "^4.21.1",
     "nuxt-socket-io": "^3.0.13",
     "qs": "^6.11.2",
-    "vue-final-modal": "^4.4.6"
+    "vue-final-modal": "^4.4.6",
+    "vue-tippy": "^6.3.1",
+    "vue3-carousel-nuxt": "^1.1.0",
+    "vue-query": "^1.26.0"
   }
 }

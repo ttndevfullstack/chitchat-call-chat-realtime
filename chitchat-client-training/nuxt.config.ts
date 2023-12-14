@@ -34,7 +34,7 @@ export default defineNuxtConfig({
     layoutTransition: { name: 'layout', type: 'animation' },
   },
 
-  modules: ['nuxt-socket-io', '@sidebase/nuxt-auth', 'nuxt-icon'],
+  modules: ['nuxt-socket-io', '@sidebase/nuxt-auth', 'nuxt-icon', "@nuxt/image"],
 
   // Sidebar Auth Config
   auth: {

@@ -2,10 +2,10 @@
 @import 'variables';
 @import 'animations/transitions';
 
+// Scroll Bar
 #scrollbar::-webkit-scrollbar-track {
   -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
 }
-
 #scrollbar::-webkit-scrollbar {
   width: 4px;
   background-color: #f7f8f9;
@@ -28,7 +28,7 @@ html {
 }
 
 body {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-style: normal;
   font-weight: 400;
 }
@@ -43,7 +43,7 @@ h1,
 h2,
 h3,
 h5 {
-  font-family: 'Montserrat', sans-serif;
+  font-family: 'Montserrat', sans-serif !important;
   color: var(--system_title_color);
 }
 
@@ -52,32 +52,36 @@ h6,
 p,
 b,
 span {
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Roboto', sans-serif !important;
 }
 
 h2 {
-  font-size: 25.3855px;
-  font-weight: 800;
+  font-size: 25.3855px !important;
+  font-weight: 800 !important;
   color: var(--system_title_color);
 }
 
 h4 {
-  font-size: 15.3464px;
-  font-weight: 400;
+  font-size: 15.3464px !important;
+  font-weight: 400 !important;
 }
 
 h5 {
-  font-size: 13.6732px;
-  font-weight: 700;
+  font-size: 13.6732px !important;
+  font-weight: 700 !important;
 }
 
 h6 {
-  font-size: 11.6732px;
-  font-weight: 600;
+  font-size: 11.6732px !important;
+  font-weight: 400 !important;
   color: var(--system_text_color);
 }
 
 span {
-  font-size: 11.6732px;
-  font-weight: 400;
+  font-size: 11.6732px !important;
+  font-weight: 400 !important;
+}
+
+#hidden {
+  display: none !important;
 }

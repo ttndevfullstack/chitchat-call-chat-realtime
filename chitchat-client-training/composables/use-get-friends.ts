@@ -2,13 +2,14 @@ import useApi from '@/plugins/api';
 import { useQuery } from 'vue-query';
 import type { UnwrapRef } from 'vue';
 
-export default function useGetChatrooms(params?: UnwrapRef<any>, options?: any) {
+export default function useGetFriends(params?: UnwrapRef<any>, options?: any) {
   const $api = useApi();
   const query = useQuery(
-    ['chatrooms', params],
+    ['friends', params],
     () => {
-      if (!params?.value?.email) return;
-      return $api.chatroom.getAllChatroomByEmail(params?.value);
+      const { email } = params?.value;
+      if (!email) return;
+      return $api.user.getFriends(email);
     },
     {
       refetchOnWindowFocus: false,
@@ -16,10 +17,10 @@ export default function useGetChatrooms(params?: UnwrapRef<any>, options?: any) 
     },
   );
 
-  const chatrooms = computed(() => query.data.value?.data || []);
+  const friends = computed(() => query.data.value?.data || []);
 
   return {
     ...query,
-    chatrooms,
+    friends,
   };
 }

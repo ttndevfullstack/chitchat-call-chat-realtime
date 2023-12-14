@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 const router = useRouter();
-const roomId = ref<string>('');
+const room_id = ref<string>('');
 
 const handleJoinRoom = () => {
-  if (!roomId.value) return;
-  window.location.search = `/call-video?room=${roomId.value}`;
+  if (!room_id.value) return;
+  router.push('/call/room/' + room_id.value);
 };
 </script>
 
@@ -16,7 +16,13 @@ const handleJoinRoom = () => {
       </div>
       <div class="inputForm">
         <Icon name="mdi:rename-outline" class="text-xl" />
-        <input type="text" class="input" placeholder="Enter chatroom id" v-model="roomId" />
+        <input
+          type="text"
+          class="input"
+          placeholder="Enter chatroom id"
+          v-model="room_id"
+          @keyup.enter="handleJoinRoom"
+        />
       </div>
 
       <div class="flexCenter">

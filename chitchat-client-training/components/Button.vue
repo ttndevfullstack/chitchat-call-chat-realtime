@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import 'tippy.js/dist/tippy.css';
+import { Tippy } from 'vue-tippy';
+
 defineProps({
   width: {
     type: String,
@@ -28,6 +31,18 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  content: {
+    type: String,
+    default: 'button',
+  },
+  transparent: {
+    type: Boolean,
+    default: false,
+  },
+  hover: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(['click']);
@@ -37,23 +52,31 @@ const handleClick = (e: Event) => {
 </script>
 
 <template>
-  <button
-    class="relative rounded-full bg-button_secondary"
-    :class="[
-      {
-        'text-btn_primary bg-btn_primary': primary,
-      },
-      { 'text-btn_secondary bg-btn_secondary': secondary },
-    ]"
-    :style="{ width, height }"
-    @click="handleClick"
-  >
-    <div v-if="ping" class="container">
-      <span class="heartbeat"></span>
-      <span class="dot"></span>
-    </div>
-    <Icon :name="iconName" :size="size" />
-  </button>
+  <tippy placement="top" animation theme="dark">
+    <button
+      class="relative rounded-full bg-button_secondary transition-all duration-300 ease-linear"
+      :class="[
+        {
+          'text-btn_primary bg-btn_primary': primary,
+        },
+        { 'text-btn_secondary bg-btn_secondary': secondary },
+        { 'text-btn_secondary bg-transparent': transparent },
+        { 'hover:bg-button_hover': hover },
+      ]"
+      :style="{ width, height }"
+      @click="handleClick"
+    >
+      <div v-if="ping" class="container">
+        <span class="heartbeat"></span>
+        <span class="dot"></span>
+      </div>
+      <Icon :name="iconName" :size="size" />
+    </button>
+
+    <template #content>
+      <div class="py-1">{{ content }}</div>
+    </template>
+  </tippy>
 </template>
 
 <style>

@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { Channel } from 'src/schema/channel.schema';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @Injectable()
 export class ChannelService {
@@ -26,6 +27,11 @@ export class ChannelService {
   }
 
   public async create(createChannelDto: CreateChannelDto) {
+    const channel = await this.channelModel.findOne({
+      room_id: createChannelDto.room_id,
+    });
+    if (channel) throw new BadRequestException('Channel is exist');
+
     const createdChannel = new this.channelModel(createChannelDto);
     await createdChannel.save();
 
@@ -39,23 +45,15 @@ export class ChannelService {
     };
   }
 
-  public async joinRoom(createChannelDto: CreateChannelDto) {
+  public async joinRoom(updateChannelDto: UpdateChannelDto) {
     const channel = await this.channelModel.findOne({
-      room_id: createChannelDto.room_id,
+      room_id: updateChannelDto.room_id,
     });
-
-    if (!channel) {
-      const res = await this.create(createChannelDto);
-      return {
-        status: 201,
-        success: true,
-        data: res.data,
-      };
-    }
+    if (channel) throw new NotFoundException('Channel not found');
 
     const updateChannel = await this.channelModel.findOneAndUpdate(
-      { room_id: createChannelDto.room_id },
-      { members: [...channel.members, createChannelDto.member] },
+      { room_id: updateChannelDto.room_id },
+      { members: channel.members.push(updateChannelDto.member) },
     );
 
     return {

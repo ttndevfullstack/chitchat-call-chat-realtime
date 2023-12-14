@@ -4,7 +4,7 @@ export type Message = {
   content: string;
   type: string;
   sender: string;
-  sendAt: string;
+  send_at: string;
 };
 
 export type User = {
@@ -14,18 +14,22 @@ export type User = {
   password: string;
   avatar: string;
   role: [string];
-  chatroomIds: string;
+  status: string;
+  friends: string[];
+  chatroom_ids: string;
 };
 
 export type Chatroom = {
   _id: string;
   name: string;
+  avatar: string;
   roomMaster: string;
   members: string[];
+  status: string;
+  total_member: string;
 };
 
 export type Channel = {
-  _id: string;
-  createBy: string;
+  room_id: string;
   members: string[];
 };

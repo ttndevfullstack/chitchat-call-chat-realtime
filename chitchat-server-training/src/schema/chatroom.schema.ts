@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { UserStatus } from 'src/common/enums/enums';
 
 export type ChatroomDocument = HydratedDocument<Chatroom>;
 
@@ -17,11 +18,17 @@ export class Chatroom {
   @Prop({ type: [String], ref: 'User', required: true })
   members: string[];
 
+  @Prop({ type: Number, default: 0 })
+  total_member: number;
+
   @Prop({ type: [String], ref: 'Message', default: [] })
   messages: string[];
 
   @Prop({ default: false, select: false })
   is_delete: boolean;
+
+  @Prop({ type: String, default: 'offline' })
+  status: UserStatus;
 }
 
 export const ChatroomSchema = SchemaFactory.createForClass(Chatroom);

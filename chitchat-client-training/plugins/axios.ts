@@ -12,7 +12,7 @@ const useAxiosClient = () => {
   });
 
   client.interceptors.request.use((config) => {
-    const { data } = useAuth();
+    const { data }: { data: any } = useAuth();
     const token = data.value?.jwt;
 
     if (token) {

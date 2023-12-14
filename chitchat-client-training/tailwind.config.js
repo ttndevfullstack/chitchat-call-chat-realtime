@@ -29,6 +29,7 @@ export default {
         message_send: 'var(--message_send_bg)',
         message_come: 'var(--message_come_bg)',
         feature_default: 'var(--feature_default_bg)',
+        button_hover: 'var(--button_hover_bg)',
       },
       width: {
         button: 'var(--button_default_width)',

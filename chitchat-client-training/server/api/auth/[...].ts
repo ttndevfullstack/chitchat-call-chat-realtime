@@ -38,6 +38,7 @@ export default NuxtAuthHandler({
               email: res.data?.user?.email,
               avatar: res.data?.user?.avatar,
               role: res.data?.user?.role,
+              status: res.data?.user?.status,
               access_token: res.access_token,
             };
           }
@@ -60,6 +61,7 @@ export default NuxtAuthHandler({
         token.email = user ? (user as any).email : '';
         token.avatar = user ? (user as any).avatar : '';
         token.role = user ? (user as any).role || [] : [];
+        token.status = user ? (user as any).status || [] : [];
         token.jwt = user ? (user as any).access_token || '' : '';
       }
       return Promise.resolve(token);
@@ -70,6 +72,7 @@ export default NuxtAuthHandler({
       (session as any).email = token.email;
       (session as any).avatar = token.avatar;
       (session as any).role = token.role;
+      (session as any).status = token.status;
       (session as any).chatroom_ids = token.chatroom_ids;
       (session as any).jwt = token.jwt;
       return Promise.resolve(session);

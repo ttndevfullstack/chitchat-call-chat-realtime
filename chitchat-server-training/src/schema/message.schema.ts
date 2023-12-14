@@ -12,6 +12,9 @@ export class Message {
   @Prop({ type: String, ref: 'User', required: true })
   sender: string;
 
+  @Prop({ type: String, ref: 'User', required: true })
+  send_at: string;
+
   @Prop({ type: String, required: true })
   type: MessageType;
 

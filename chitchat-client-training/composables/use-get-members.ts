@@ -2,14 +2,14 @@ import useApi from '@/plugins/api';
 import { useQuery } from 'vue-query';
 import type { UnwrapRef } from 'vue';
 
-export default function useGetMessages(params?: UnwrapRef<any>, options?: any) {
+export default function useGetMembers(params?: UnwrapRef<any>, options?: any) {
   const $api = useApi();
   const query = useQuery(
-    ['messages', params],
+    ['members', params],
     () => {
       if (!params?.value?.chatroom_id) return;
       const chatroom_id = params?.value?.chatroom_id;
-      return $api.message.getMessageInChatroom(chatroom_id);
+      return $api.chatroom.getAllMember(chatroom_id);
     },
     {
       refetchOnWindowFocus: false,
@@ -17,10 +17,10 @@ export default function useGetMessages(params?: UnwrapRef<any>, options?: any) {
     },
   );
 
-  const messages = computed(() => query.data.value?.data || []);
+  const members = computed(() => query.data.value?.data || []);
 
   return {
     ...query,
-    messages,
+    members,
   };
 }

@@ -9,6 +9,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Chatroom } from 'src/schema/chatroom.schema';
 import { Model } from 'mongoose';
 import { UserService } from 'src/user/user.service';
+import { GetChatRoomParams } from './dto/get-chatroom-params';
 
 @Injectable()
 export class ChatroomService {
@@ -19,7 +20,6 @@ export class ChatroomService {
 
   public async findOneById(id: string) {
     const chatroom = await this.chatroomModel.findOne({ _id: id });
-
     if (!chatroom) throw new NotFoundException('Chat room not found');
 
     return {
@@ -29,17 +29,52 @@ export class ChatroomService {
     };
   }
 
-  public async findAllByEmail(email: string) {
-    // test
-    const username = email.split('@')[0];
-    const chatroomList = await this.chatroomModel.find({
-      $or: [{ roomMaster: username }, { members: { $in: [username] } }],
-    });
+  public async findAllByEmail(params: GetChatRoomParams) {
+    let chatrooms;
+    if (params.room_type === 'direct') {
+      chatrooms = await this.chatroomModel.find({
+        $and: [
+          {
+            $or: [
+              { roomMaster: params.email },
+              { members: { $in: [params.email] } },
+            ],
+          },
+          { total_member: { $lte: 2 } },
+        ],
+      });
+    } else {
+      chatrooms = await this.chatroomModel.find({
+        $and: [
+          {
+            $or: [
+              { roomMaster: params.email },
+              { members: { $in: [params.email] } },
+            ],
+          },
+          { total_member: { $gt: 2 } },
+        ],
+      });
+    }
 
     return {
       status: 201,
       success: true,
-      data: chatroomList,
+      data: chatrooms,
+    };
+  }
+
+  public async findAllMember(chatroom_id: string) {
+    const chatroom = await this.chatroomModel.findOne({ _id: chatroom_id });
+    if (!chatroom) throw new NotFoundException('Chat room not found');
+
+    const response = await this.userService.findAllUserInRoom(chatroom.members);
+    const members = response.data;
+
+    return {
+      status: 201,
+      success: true,
+      data: members,
     };
   }
 
@@ -66,6 +101,21 @@ export class ChatroomService {
       status: 201,
       success: true,
       data: createdChatroom,
+    };
+  }
+
+  public async updateStatus(email: string, status: string) {
+    const group_chatroom = await this.chatroomModel.updateMany(
+      { members: email, total_member: { $gt: 2 } },
+      { $set: { status: status } },
+    );
+    if (!group_chatroom)
+      throw new NotFoundException('Chat room not found or not updated');
+
+    return {
+      status: 201,
+      success: true,
+      data: group_chatroom,
     };
   }
 

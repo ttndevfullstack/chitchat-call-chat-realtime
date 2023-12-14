@@ -8,7 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
-import { ChannelService } from 'src/channel/channel.service';
+import { ChatroomService } from 'src/chatroom/chatroom.service';
 
 @WebSocketGateway({ namespace: 'events' })
 export class WebsocketGateway
@@ -16,7 +16,7 @@ export class WebsocketGateway
 {
   constructor(
     private readonly authService: AuthService,
-    private readonly channelService: ChannelService,
+    private readonly chatroomService: ChatroomService,
   ) {}
 
   @WebSocketServer()
@@ -24,39 +24,46 @@ export class WebsocketGateway
 
   @SubscribeMessage('connect')
   public async handleConnection(client: Socket) {
-    let isVerified;
-
+    // Validate User
     const token = client.handshake.query.token.toString();
-    if (token) {
-      isVerified = await this.authService.verifyToken(token);
-    }
+    if (!token) return;
+    const user = await this.authService.verifyTokenAndUpdateStatus(
+      token,
+      'online',
+    );
+    if (!user) return client.disconnect();
+    await this.chatroomService.updateStatus(user?.email, 'online');
 
-    if (!isVerified) return client.disconnect();
     console.log(`Client connected: ${client.id}`);
+    this.server.emit('user_status', JSON.stringify(user));
   }
 
   @SubscribeMessage('disconnect')
   public async handleDisconnect(client: Socket) {
+    const token = client.handshake.query.token.toString();
+    if (!token) return;
+    const user = await this.authService.verifyTokenAndUpdateStatus(
+      token,
+      'offline',
+    );
+    if (!user) return client.disconnect();
+    await this.chatroomService.updateStatus(user?.email, 'offline');
     client.disconnect();
     console.log(`Client disconnected: ${client.id}`);
+    this.server.emit('user_status', JSON.stringify({ user }));
   }
 
   @SubscribeMessage('offer')
   public async handleOffer(@MessageBody() data: any) {
+    // const channel = await this.channelService.findOneById();
     console.log('offer:', data);
     this.server.emit('offer', data);
   }
 
-  @SubscribeMessage('answer')
-  public async handleAnswer(@MessageBody() data: any) {
-    console.log('answer:', data);
-    this.server.emit('answer', data);
-  }
-
-  @SubscribeMessage('iceCandidate')
-  public async handleIceCandidate(@MessageBody() data: any) {
-    console.log('answer:', data);
-    this.server.emit('iceCandidate', data);
+  @SubscribeMessage('send_message')
+  public async handleSendMessage(created_message: any) {
+    console.log(created_message);
+    this.server.emit('send_message', created_message);
   }
 
   @SubscribeMessage('member_joined')

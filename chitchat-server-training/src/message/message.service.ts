@@ -51,7 +51,9 @@ export class MessageService {
     if (!createdMessage)
       throw new BadRequestException('Create message failure');
 
-    await this.websocketGateway.handleAnswer(createdMessage);
+    await this.websocketGateway.handleSendMessage(
+      JSON.stringify(createdMessage),
+    );
 
     return {
       status: 201,
@@ -87,7 +89,7 @@ export class MessageService {
       { is_delete: true, is_recall: true },
     );
 
-    this.websocketGateway.handleAnswer(recalledMessage);
+    this.websocketGateway.handleSendMessage(recalledMessage);
 
     return {
       status: 201,

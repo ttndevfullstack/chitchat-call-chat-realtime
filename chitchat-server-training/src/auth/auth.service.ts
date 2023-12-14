@@ -20,13 +20,16 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async verifyToken(token: string) {
+  public async verifyTokenAndUpdateStatus(token: string, status: string) {
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET_KEY,
       });
 
-      const user = await this.userModel.findOne({ _id: payload.sub });
+      const user = await this.userModel.findOneAndUpdate(
+        { _id: payload.sub },
+        { status: status },
+      );
       return user;
     } catch {
       return false;
@@ -71,7 +74,6 @@ export class AuthService {
 
   public async login(loginAuthDto: LoginAuthDto) {
     const user = await this.userModel.findOne({ email: loginAuthDto.email });
-
     if (!user) throw new NotFoundException('User not found');
 
     const matched = await bcrypt.compare(loginAuthDto.password, user.password);
@@ -94,7 +96,6 @@ export class AuthService {
       secret: process.env.JWT_SECRET_KEY,
       expiresIn: config().security.expiresIn,
     });
-
     const { password, ...result } = user.toObject();
 
     return {
