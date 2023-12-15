@@ -62,8 +62,10 @@ makeCall();
 
 const handleUserJoined = async (data) => {
   console.log(data.email + ' joined to channel');
+  if (channel.value?.participants.includes(uid.value)) return;
+  console.log(channel.value);
   channel.value = data.channel;
-  if (channel.value?.participants.includes(user_email)) return;
+  console.log(channel.value);
   createOffer(data);
 };
 
@@ -75,7 +77,6 @@ const handleUserLeft = (email) => {
 
 const handleMessageFromPeer = async (data) => {
   const message = JSON.parse(data.text);
-  console.log(message)
   if(message?.type === 'offer') {
     if (uid.value.includes(message.email)) return;
     createAnswer(message)
@@ -100,6 +101,7 @@ const createOffer = async (data) => {
     let offer = await peerConnection.value.createOffer();
     await peerConnection.value.setLocalDescription(offer);
 
+    console.log(uid.value + " createOffer:" + offer);
     io.emit('message_from_peer', {
       text: JSON.stringify({ 'email': data.email, 'room_id': data.room_id, 'type': 'offer', 'offer': offer })
     });
@@ -117,6 +119,7 @@ const createAnswer = async (message) => {
     const answer = await peerConnection.value.createAnswer();
     await peerConnection.value.setLocalDescription(answer);
 
+    console.log(uid.value + " createAnswer:" + answer);
     io.emit('message_from_peer', {
       text: JSON.stringify({ 'email': message.email, 'room_id': message.room_id, 'type': 'answer', 'answer': answer })
     });
