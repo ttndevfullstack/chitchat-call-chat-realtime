@@ -47,7 +47,7 @@ const handleSignUp = async (even: Event) => {
 </script>
 
 <template>
-  <div class="grid place-items-center w-full h-screen">
+  <div class="grid place-items-center w-full h-screen bg-chatroom_default">
     <div :class="`container ${is_signup_page ? 'right-panel-active' : ''}`" id="container">
       <div class="form-container sign-up-container">
         <form action="#">
@@ -77,8 +77,8 @@ const handleSignUp = async (even: Event) => {
             class="outline-none"
             v-model="form.email"
             @keyup.enter="handleLogin"
-            required
             autocomplete="email"
+            required
           />
           <div class="relative w-full h-fit">
             <input
@@ -87,6 +87,7 @@ const handleSignUp = async (even: Event) => {
               class="outline-none"
               v-model="form.password"
               @keyup.enter="handleLogin"
+              autocomplete="password"
               required
             />
             <div
@@ -159,7 +160,7 @@ const handleSignUp = async (even: Event) => {
           <div class="overlay-panel overlay-right">
             <h1 class="text-white">Hello, Friend!</h1>
             <p>Enter your personal details and start journey with us</p>
-            <button class="ghost" id="signUp" @click="is_signup_page = true">Sign Up</button>
+            <button class="ghost hover" id="signUp" @click="is_signup_page = true">Sign Up</button>
           </div>
         </div>
       </div>

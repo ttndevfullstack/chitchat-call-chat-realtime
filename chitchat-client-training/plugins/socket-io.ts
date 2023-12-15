@@ -5,7 +5,7 @@ const useSocketIO = () => {
   const runtimeConfig = useRuntimeConfig();
   const ws_url = runtimeConfig.public.websocket;
 
-  const io = sio('ws://localhost:5001/events', { transports: ['websocket'], query: { token: data?.value?.jwt } });
+  const io = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
 
   return io;
 };

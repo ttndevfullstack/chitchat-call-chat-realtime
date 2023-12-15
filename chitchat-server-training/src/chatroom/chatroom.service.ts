@@ -79,17 +79,9 @@ export class ChatroomService {
   }
 
   public async create(createChatroomDto: CreateChatroomDto) {
-    let chatroomName;
-
-    if (!createChatroomDto.name) {
-      createChatroomDto.members.forEach(
-        (member) => chatroomName + ', ' + member.toString(),
-      );
-    }
-
     const createdChatroom = new this.chatroomModel({
       ...createChatroomDto,
-      name: createChatroomDto.name || chatroomName,
+      name: createChatroomDto.name,
     });
 
     await createdChatroom.save();
@@ -106,7 +98,7 @@ export class ChatroomService {
 
   public async updateStatus(email: string, status: string) {
     const group_chatroom = await this.chatroomModel.updateMany(
-      { members: email, total_member: { $gt: 2 } },
+      { members: { $in: [email] }, total_member: { $gt: 2 } },
       { $set: { status: status } },
     );
     if (!group_chatroom)

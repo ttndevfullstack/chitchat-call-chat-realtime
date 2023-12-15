@@ -16,21 +16,13 @@ import { UpdateChannelDto } from './dto/update-channel.dto';
 export class ChannelController {
   constructor(private readonly channelService: ChannelService) {}
 
-  // @Post('')
-  // create(@Body() createChannelDto: CreateChannelDto) {
-  //   return this.channelService.create(createChannelDto);
-  // }
+  @Post('')
+  create(@Body() createChannelDto: CreateChannelDto) {
+    return this.channelService.create(createChannelDto);
+  }
 
-  // @Post('/join/:id')
-  // joinToChannel(
-  //   @Param('id') id: string,
-  //   @Body() updateChannelDto: UpdateChannelDto,
-  // ) {
-  //   return this.channelService.update(id, updateChannelDto);
-  // }
-
-  // @Delete(':id')
-  // delete(@Param('id') id: string) {
-  //   return this.channelService.delete(id);
-  // }
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.channelService.delete(id);
+  }
 }

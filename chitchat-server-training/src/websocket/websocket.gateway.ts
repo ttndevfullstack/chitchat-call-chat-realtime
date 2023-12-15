@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
+import { ChannelService } from 'src/channel/channel.service';
 import { ChatroomService } from 'src/chatroom/chatroom.service';
 
 @WebSocketGateway({ namespace: 'events' })
@@ -17,6 +18,7 @@ export class WebsocketGateway
   constructor(
     private readonly authService: AuthService,
     private readonly chatroomService: ChatroomService,
+    private readonly channelService: ChannelService,
   ) {}
 
   @WebSocketServer()
@@ -48,14 +50,13 @@ export class WebsocketGateway
     );
     if (!user) return client.disconnect();
     await this.chatroomService.updateStatus(user?.email, 'offline');
+    this.server.emit('user_status', JSON.stringify(user));
     client.disconnect();
     console.log(`Client disconnected: ${client.id}`);
-    this.server.emit('user_status', JSON.stringify({ user }));
   }
 
   @SubscribeMessage('offer')
   public async handleOffer(@MessageBody() data: any) {
-    // const channel = await this.channelService.findOneById();
     console.log('offer:', data);
     this.server.emit('offer', data);
   }
@@ -68,7 +69,19 @@ export class WebsocketGateway
 
   @SubscribeMessage('member_joined')
   public async handleEvent(@MessageBody() data: any) {
-    this.server.emit('member_joined', data);
+    const message = JSON.parse(data.text);
+    const response = await this.channelService.joinToChannel(
+      message.room_id,
+      message.email,
+    );
+
+    this.server.emit('member_joined', {
+      text: JSON.stringify({
+        email: message.email,
+        room_id: message.room_id,
+        channel: response.data,
+      }),
+    });
   }
 
   @SubscribeMessage('member_left')

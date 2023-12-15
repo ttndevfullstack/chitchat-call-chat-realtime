@@ -11,3 +11,8 @@ export enum UserStatus {
   Online = 'online',
   Offline = 'offline',
 }
+
+export enum ChannelStatus {
+  Active = 'active',
+  InActive = 'inactive',
+}

@@ -9,13 +9,13 @@ import getFormattedTimestamp from '@/helpers/getFormattedTimestamp';
 const { data } = useAuth();
 const $io = useSocketIO();
 const $api = useApi();
-const is_hidden = ref<boolean>(false);
 const chatroom_show = ref<Chatroom | null>(null);
+const is_hidden = ref<boolean>(false);
 const message_content = ref<string>('');
 const message_list = ref<Message[]>([]);
 const member_list = ref<User[]>([]);
 const message_status = ref<string>('');
-const email = data.value?.user?.email;
+const user_email = data.value?.user?.email;
 
 const params = computed(() => ({
   chatroom_id: chatroom_show.value?._id,
@@ -49,31 +49,24 @@ onMounted(() => {
       if (!member.email.includes(user?.email)) return member;
       return { ...member, status: user.status };
     });
-    console.log(updated_member_list);
     member_list.value = updated_member_list;
   });
 
   $io.on('send_message', (data: any) => {
     const message: Message = JSON.parse(data);
-    if (message?.sender?.includes(email!)) return;
+    if (message?.sender?.includes(user_email!)) return;
     message_list.value = [...message_list.value, message];
   });
 });
 
 const sendMessage = () => {
-  if (
-    message_content.value === '' ||
-    chatroom_show.value?._id === '' ||
-    !data.value?.user?.email ||
-    !data.value?.user?.email
-  )
-    return;
+  if (message_content.value === '' || chatroom_show.value?._id === '' || !user_email) return;
 
   const newMessage: Message = {
     chatroom_id: chatroom_show.value?._id!,
     content: message_content.value,
     type: 'text',
-    sender: data.value?.user?.email!,
+    sender: user_email!,
     send_at: getFormattedTimestamp(),
   };
 
@@ -96,9 +89,9 @@ const chatroomIdChange = (chatroom: Chatroom) => {
   chatroom_show.value = chatroom;
 };
 
-const hiddenNavigation = () => {
+const hiddenNavigation = (value: boolean) => {
   alert(is_hidden);
-  !is_hidden.value;
+  is_hidden.value = value;
 };
 </script>
 
@@ -137,11 +130,38 @@ const hiddenNavigation = () => {
 
                 <div
                   v-if="chatroom_show"
-                  class="flex flex-col gap-[10px] text-white w-[150px] border-r-[1px] border-gray-400 transition-all duration-300 ease-out"
+                  class="flex flex-col gap-[10px] text-white w-fit border-r-[1px] border-gray-400 transition-all duration-300 ease-out pr-4"
                 >
-                  <h5>{{ chatroom_show?.name }}</h5>
-                  <div class="flexCenter bg-accent rounded-full text-xs w-fit py-[1px] px-3">Active</div>
-                  <!-- <div v-if="item?.states === 'offline'" class="flexCenter px-1 bg-error">Active</div> -->
+                  <div v-if="chatroom_show?.total_member.toString() == '2'">
+                    <h5 v-if="chatroom_show?.members[0]?.includes(user_email!)">{{ chatroom_show?.members[1] }}</h5>
+                    <h5 v-else>{{ chatroom_show?.members[0] }}</h5>
+                  </div>
+
+                  <div v-else>
+                    <h5>{{ chatroom_show?.name }}</h5>
+                  </div>
+
+                  <div v-if="chatroom_show?.total_member.toString() == '2'">
+                    <div v-for="(member, index) in member_list" :key="index">
+                      <div v-if="chatroom_show?.members.includes(member.email) && !member.email.includes(user_email!)">
+                        <div v-if="member?.status == 'online'">
+                          <div class="flexCenter bg-accent rounded-full text-xs w-fit py-[1px] px-3">Active</div>
+                        </div>
+                        <div v-else>
+                          <div class="flexCenter bg-error rounded-full text-xs w-fit py-[1px] px-3">InActive</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-else>
+                    <div v-if="chatroom_show?.status == 'online'">
+                      <div class="flexCenter bg-accent rounded-full text-xs w-fit py-[1px] px-3">Active</div>
+                    </div>
+                    <div v-else>
+                      <div class="flexCenter bg-error rounded-full text-xs w-fit py-[1px] px-3">InActive</div>
+                    </div>
+                  </div>
                 </div>
 
                 <div v-else class="flex-1 bg-transparent h-full w-[350px] transition-all duration-300 ease-out"></div>
@@ -199,7 +219,7 @@ const hiddenNavigation = () => {
               class="flex gap-3 cursor-pointer transition-all duration-300 ease-out"
             >
               <!-- Incoming Message -->
-              <template v-if="message?.sender.toString() !== data?.user?.email?.toString()">
+              <template v-if="!message?.sender?.includes(user_email!)">
                 <div
                   v-if="!message_list[index - 1]?.sender.includes(message_list[index]?.sender)"
                   class="flexStart w-full h-full gap-3 py-2 mt-4"
@@ -239,7 +259,7 @@ const hiddenNavigation = () => {
                       </h6>
                     </div>
                     <div
-                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title"
+                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
                     >
                       {{ message?.content }}
                     </div>
@@ -253,7 +273,7 @@ const hiddenNavigation = () => {
 
                   <div class="flex flex-col gap-2">
                     <div
-                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title"
+                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
                     >
                       {{ message?.content }}
                     </div>

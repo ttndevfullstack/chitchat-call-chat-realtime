@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import { UserStatus } from 'src/common/enums/enums';
 
 export type ChatroomDocument = HydratedDocument<Chatroom>;
@@ -29,6 +29,9 @@ export class Chatroom {
 
   @Prop({ type: String, default: 'offline' })
   status: UserStatus;
+
+  @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'Channel', default: [] })
+  channels: mongoose.Schema.Types.ObjectId[];
 }
 
 export const ChatroomSchema = SchemaFactory.createForClass(Chatroom);

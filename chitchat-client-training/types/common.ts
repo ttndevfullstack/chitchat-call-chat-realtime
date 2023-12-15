@@ -28,8 +28,3 @@ export type Chatroom = {
   status: string;
   total_member: string;
 };
-
-export type Channel = {
-  room_id: string;
-  members: string[];
-};

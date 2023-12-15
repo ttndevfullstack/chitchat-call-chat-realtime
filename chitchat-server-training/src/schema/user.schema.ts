@@ -19,6 +19,15 @@ export class User {
   @Prop({ default: '' })
   avatar: string;
 
+  @Prop({
+    type: String,
+    minlength: 9,
+    maxlength: 12,
+    required: true,
+    default: '',
+  })
+  number_phone: string;
+
   @Prop({ default: false })
   status: UserStatus;
 

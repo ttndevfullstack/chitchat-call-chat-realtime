@@ -1,30 +1,51 @@
 <script lang="js" setup>
 import { io as sio } from 'socket.io-client';
 import { servers } from '@/constants/constants'
+import useApi from '@/plugins/api';
+import getFormattedTimestamp from '~/helpers/getFormattedTimestamp';
 
-// Connect Socket IO
 const { data } = useAuth();
-const route = useRoute()
-const router = useRouter()
+const $api = useApi();
+const route = useRoute();
+const router = useRouter();
 const runtimeConfig = useRuntimeConfig();
 const ws_url = runtimeConfig.public.websocket;
 const io = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
-console.log(data.value);
 
 let localStream;
 let remoteStream;
+const channel = ref();
 const peerConnection = ref();
-const email = data?.value?.user?.email;
+const user_email = data?.value?.user?.email;
 const room_id = route?.params?.id;
-const uid = String(Math.floor(Math.random() * 10000));
+const uid = ref(String(Math.floor(Math.random() * 1000000)));
 
 const constraints = {
   video: true,
   // audio: true,
 };
 
+const createChannel = async () => {
+  const new_channel = {
+    room_id,
+    status: 'active',
+    time_start: getFormattedTimestamp().toString(),
+    participants: [],
+  };
+
+  await $api.channel.createChannel(new_channel).then((data) => {
+    if (!data?.success) {
+      alert('Create channel fail!');
+      router.push('/');
+    }
+    channel.value = data?.data;
+  })
+}
+
 const makeCall = async () => {
   // validateUser(room_id);
+  await createChannel();
+
   io.on('member_joined', data => handleUserJoined(JSON.parse(data.text)));
   io.on('member_left', data => handleUserLeft(data));
   io.on('message_from_peer', data => handleMessageFromPeer(data));
@@ -32,15 +53,17 @@ const makeCall = async () => {
   localStream = await navigator.mediaDevices.getUserMedia(constraints);
   document.getElementById('user-1').srcObject = localStream;
 
-  if (!email || !room_id) return;
+  if (!user_email || !uid.value || !channel.value?.room_id) return;
   io.emit('member_joined', {
-    text: JSON.stringify({ 'email': uid, 'room_id': room_id })
+    text: JSON.stringify({ 'email': uid.value, 'room_id': channel.value?.room_id })
   });
 };
 makeCall();
 
 const handleUserJoined = async (data) => {
   console.log(data.email + ' joined to channel');
+  channel.value = data.channel;
+  if (channel.value?.participants.includes(user_email)) return;
   createOffer(data);
 };
 
@@ -54,7 +77,7 @@ const handleMessageFromPeer = async (data) => {
   const message = JSON.parse(data.text);
   console.log(message)
   if(message?.type === 'offer') {
-    if (uid.includes(message.email)) return;
+    if (uid.value.includes(message.email)) return;
     createAnswer(message)
   }
 
@@ -63,7 +86,7 @@ const handleMessageFromPeer = async (data) => {
   }
 
   if(message?.type === 'candidate') {
-    if (uid.includes(message.email)) return;
+    if (uid.value.includes(message.email)) return;
     if(peerConnection.value) {
       peerConnection.value.addIceCandidate(message.candidate)
     }
@@ -169,6 +192,8 @@ const leaveChannel = async () => {
   io.emit('member_left', data.value.user.email)
   await io.on('disconnect')
 }
+
+
 
 const validateUser = (email, room_id) => {
   if (!chatrooms.includes(room_id)) router.push('/join-room');
