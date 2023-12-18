@@ -20,7 +20,7 @@ const user_email = data.value?.user?.email;
 const params = computed(() => ({
   chatroom_id: chatroom_show.value?._id,
 }));
-const { messages } = useGetMessages(params);
+const { messages, isFetching: is_fetching_messages, isFetched: is_fetched_messages } = useGetMessages(params);
 const { members } = useGetMembers(params);
 
 watch(
@@ -208,8 +208,9 @@ const hiddenNavigation = (value: boolean) => {
 
           <div class="h-[145px] w-full bg-transparent"></div>
           <!-- Chat Messages -->
+
           <main
-            v-if="message_list.length > 0"
+            v-if="!is_fetched_messages || message_list.length > 0"
             id="scrollbar"
             class="flex-1 w-full h-full lg:px-[45px] md:px-6 py-4 overflow-y-scroll scroll-smooth"
           >
@@ -351,6 +352,46 @@ const hiddenNavigation = (value: boolean) => {
               <p class="text-text text-xl font-bold mt-4">Select a chat to read messages</p>
             </div>
           </main>
+
+          <div v-if="is_fetching_messages" class="p-[24px] flex-1 w-full h-full transition-all duration-300 ease-out">
+            <div class="flex flex-col gap-4 p-4 w-full">
+              <div class="animate-pulse flex space-x-4">
+                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
+                <div class="w-72 space-y-2 py-1">
+                  <div class="h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
+                  <div class="w-3/4 h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
+                </div>
+              </div>
+
+              <div class="flexEnd ml-auto w-full animate-pulse flex space-x-4">
+                <div class="w-64 space-y-2 py-1">
+                  <div class="h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"></div>
+                  <div
+                    class="ml-auto w-3/4 h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"
+                  ></div>
+                </div>
+                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
+              </div>
+
+              <div class="animate-pulse flex space-x-4">
+                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
+                <div class="w-72 space-y-2 py-1">
+                  <div class="h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
+                  <div class="w-3/4 h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
+                </div>
+              </div>
+
+              <div class="flexEnd ml-auto w-full animate-pulse flex space-x-4">
+                <div class="w-64 space-y-2 py-1">
+                  <div class="h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"></div>
+                  <div
+                    class="ml-auto w-3/4 h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"
+                  ></div>
+                </div>
+                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
+              </div>
+            </div>
+          </div>
 
           <!-- Chat Input -->
           <footer class="absolute bottom-0 left-0 py-[20px] px-[45px] bg-white w-full border-r-[2px] border-gray-200">

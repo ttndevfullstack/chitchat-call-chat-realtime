@@ -13,6 +13,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from 'src/guard/auth.guard';
+import { UpdateFriendDto } from './dto/update-friend.dto';
 
 @UseGuards(AuthGuard)
 @Controller('user')
@@ -43,6 +44,11 @@ export class UserController {
   @Post('')
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
+  }
+
+  @Post('add-friend')
+  addFriend(@Body() updateFriendDto: UpdateFriendDto) {
+    return this.userService.addFriend(updateFriendDto);
   }
 
   @Patch(':email')

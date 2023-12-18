@@ -11,7 +11,7 @@ import config from 'src/common/configs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schema/user.schema';
 import { Model } from 'mongoose';
-import { UpdateStatusDto } from './dto/update-status.dto';
+import { UpdateFriendDto } from './dto/update-friend.dto';
 
 @Injectable()
 export class UserService {
@@ -81,6 +81,29 @@ export class UserService {
       status: 201,
       success: true,
       data: friends,
+    };
+  }
+
+  public async addFriend(updateFriendDto: UpdateFriendDto) {
+    const friend = await this.userModel.findOne({
+      email: updateFriendDto.email_friend,
+    });
+    if (!friend) throw new NotFoundException('Friend not found');
+
+    const user = await this.userModel.findOne({
+      email: updateFriendDto.email,
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.userModel.findOneAndUpdate(
+      { email: user.email },
+      { friends: [...user.friends, updateFriendDto.email_friend] },
+    );
+
+    return {
+      status: 201,
+      success: true,
+      data: friend,
     };
   }
 

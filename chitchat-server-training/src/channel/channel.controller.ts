@@ -9,7 +9,6 @@ import {
 import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
 import { ChannelService } from './channel.service';
 import { CreateChannelDto } from './dto/create-channel.dto';
-import { UpdateChannelDto } from './dto/update-channel.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('channel')

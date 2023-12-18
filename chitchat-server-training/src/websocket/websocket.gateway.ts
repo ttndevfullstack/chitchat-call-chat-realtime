@@ -49,8 +49,8 @@ export class WebsocketGateway
       'offline',
     );
     if (!user) return client.disconnect();
-    await this.chatroomService.updateStatus(user?.email, 'offline');
-    this.server.emit('user_status', JSON.stringify(user));
+    // await this.chatroomService.updateStatus(user?.email, 'offline');
+    // this.server.emit('user_status', JSON.stringify(user));
     client.disconnect();
     console.log(`Client disconnected: ${client.id}`);
   }
@@ -70,6 +70,7 @@ export class WebsocketGateway
   @SubscribeMessage('member_joined')
   public async handleEvent(@MessageBody() data: any) {
     const message = JSON.parse(data.text);
+
     const response = await this.channelService.joinToChannel(
       message.room_id,
       message.email,
@@ -86,7 +87,19 @@ export class WebsocketGateway
 
   @SubscribeMessage('member_left')
   public async handleMemberLeft(@MessageBody() data: any) {
-    this.server.emit('member_left', data);
+    const message = JSON.parse(data.text);
+    const response = await this.channelService.leftChannel(
+      message.room_id,
+      message.email,
+    );
+
+    this.server.emit('member_left', {
+      text: JSON.stringify({
+        email: message.email,
+        room_id: message.room_id,
+        channel: response.data,
+      }),
+    });
   }
 
   @SubscribeMessage('message_from_peer')

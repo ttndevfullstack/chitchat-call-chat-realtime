@@ -8,6 +8,8 @@ import useGetChatrooms from '@/composables/use-get-chatrooms';
 import useGetFriends from '@/composables/use-get-friends';
 import useGetMembers from '@/composables/use-get-members';
 import ModalCreateChatroom from '@/components/Modal/CreateChatroom.vue';
+import ModalCreateNewChat from '@/components/Modal/CreateNewChat.vue';
+import ModalCreateCall from '@/components/Modal/CreateCall.vue';
 
 const emit = defineEmits(['update:chatroom_id', 'update:is_hidden']);
 
@@ -21,15 +23,20 @@ const friend_list = ref<User[]>([]);
 const chatroom_show = ref<Chatroom | null>(null);
 const chatroom_list = ref<Chatroom[]>([]);
 const member_list = ref<User[]>([]);
-const is_hidden = ref<boolean>(false);
+const search_value = ref<string>('');
+const is_show = ref<any>({
+  new_menu: false,
+  search: false,
+  navigate: true,
+});
 
 const params = computed(() => ({
   email: data?.value?.user?.email,
   room_type: room_type.value,
 }));
 
-const { chatrooms, isFetching } = useGetChatrooms(params);
-const { friends } = useGetFriends(params);
+const { chatrooms } = useGetChatrooms(params);
+const { friends, isFetching: is_fetching_friends } = useGetFriends(params);
 const { members } = useGetMembers();
 
 watch(
@@ -54,13 +61,30 @@ onMounted(() => {
     updateStatus(user);
   });
 });
+chatroom_list.value = chatrooms.value;
 
 // Vue final modal
-const { open, close } = useModal({
+const { open: openCreateChatroom, close: closeCreateChatroom } = useModal({
   component: ModalCreateChatroom,
   attrs: {
     onConfirm() {
-      close();
+      closeCreateChatroom();
+    },
+  },
+});
+const { open: openCreateCall, close: closeCreateCall } = useModal({
+  component: ModalCreateCall,
+  attrs: {
+    onConfirm() {
+      closeCreateCall();
+    },
+  },
+});
+const { open: openCreateNewChat, close: closeCreateNewChat } = useModal({
+  component: ModalCreateNewChat,
+  attrs: {
+    onConfirm() {
+      closeCreateNewChat();
     },
   },
 });
@@ -73,6 +97,33 @@ const handleClickChatroom = (chatroom: Chatroom) => {
 const handleCall = (room_id: string) => {
   if (!room_id) return;
   router.push('/call/room/' + room_id);
+};
+
+const handleHidden = () => {
+  is_show.navigate.value = !is_show.navigate.value;
+  emit('update:is_hidden', is_show.navigate.value);
+};
+
+const handleSearch = () => {
+  const searchText = search_value.value.toLowerCase().trim();
+
+  if (!searchText) {
+    chatroom_list.value = chatrooms.value;
+  } else {
+    if (room_type.value == 'direct') {
+      chatroom_list.value = chatrooms.value.filter((chatroom: Chatroom) => {
+        let email;
+        if (chatroom.members[0].includes(user_email)) {
+          email = chatroom.members[1];
+        } else {
+          email = chatroom.members[0];
+        }
+        return email.includes(searchText);
+      });
+    } else {
+      chatroom_list.value = chatrooms.value.filter((chatroom: Chatroom) => chatroom.name.includes(searchText));
+    }
+  }
 };
 
 const updateStatus = (user: User) => {
@@ -88,8 +139,7 @@ const updateStatus = (user: User) => {
     if (chatroom.members.includes(user_email)) return chatroom;
     return { ...chatroom, status: user.status };
   });
-  console.log('updated_friend_status:', updated_friend_status);
-  console.log('updated_member_status:', updated_member_status);
+
   friend_list.value = updated_friend_status;
   member_list.value = updated_member_status;
   chatroom_list.value = updated_chatroom_status;
@@ -97,7 +147,7 @@ const updateStatus = (user: User) => {
 </script>
 
 <template>
-  <div class="relative flex flex-col h-full w-full bg-white">
+  <div class="relative flex flex-col h-full w-full bg-white transition-all duration-200 ease-out">
     <!-- Sidebar Header -->
     <header class="flex flex-col lg:px-[40px] md:px-[20px] pt-[40px] pb-2">
       <div class="flexBetween">
@@ -107,14 +157,14 @@ const updateStatus = (user: User) => {
         </div>
 
         <button
-          class="rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] bg-button_secondary text-btn_secondary hover:bg-button_hover"
-          @click="emit('update:is_hidden', !is_hidden)"
+          class="flexCenter rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] bg-button_secondary text-btn_secondary hover:bg-button_hover"
+          @click="handleHidden"
         >
           <Icon name="iconoir:view-grid" size="18px" />
         </button>
       </div>
 
-      <div class="mt-5">
+      <div v-if="!is_fetching_friends" class="mt-5">
         <carousel :items-to-show="3" :itemsToScroll="1" wrap-around autoplay="2000">
           <slide v-for="(item, index) in friends" :key="index">
             <div class="relative h-[110px] w-[96px] rounded-xl overflow-hidden">
@@ -126,7 +176,7 @@ const updateStatus = (user: User) => {
                   :class="[{ 'bg-error': item?.status === 'offline' }, { 'bg-accent': item?.status === 'online' }]"
                 ></div>
               </div>
-              <div class="absolute top-0 left-0 w-full h-full gradient"></div>
+              <div class="absolute top-0 left-0 w-full h-full avatar_shadow"></div>
             </div>
           </slide>
 
@@ -136,23 +186,52 @@ const updateStatus = (user: User) => {
           </template>
         </carousel>
       </div>
+
+      <div v-else class="mt-5 shadow p-4 max-w-sm w-full mx-auto">
+        <div class="animate-pulse flex space-x-2">
+          <div class="h-[110px] w-[96px] rounded-xl bg-slate-200"></div>
+          <div class="h-[110px] w-[96px] rounded-xl bg-slate-200"></div>
+          <div class="h-[110px] w-[96px] rounded-xl bg-slate-200"></div>
+        </div>
+      </div>
     </header>
 
     <!-- Contact List -->
     <article
-      v-if="!isFetching"
       id="scrollbar"
-      class="overflow-y-scroll scroll-smooth w-full h-[414px] transition-all duration-200 ease-linear"
+      class="overflow-y-scroll scroll-smooth w-full h-[414px] transition-all duration-200 ease-out"
     >
       <nav class="flex flex-col gap-4 px-[40px]">
-        <div class="flexBetween pt-8">
+        <div class="relative flexBetween mt-8">
           <div class="flex flex-col">
             <h2>Chat</h2>
             <h4 class="text-text">Start New Conversation</h4>
           </div>
 
-          <div class="flexCenter w-fit h-full">
-            <Button icon-name="ph:magnifying-glass-bold" secondary width="34px" height="34px" size="17px" />
+          <div class="w-fit h-full">
+            <button
+              class="flexCenter rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] bg-button_secondary text-btn_secondary hover:bg-button_hover"
+              @click="is_show.search = !is_show.search"
+            >
+              <Icon name="ph:magnifying-glass-bold" size="17px" />
+            </button>
+          </div>
+
+          <div v-if="is_show.search" class="absolute top-0 left-0 w-full h-full transition-all duration-700 ease-out">
+            <input
+              type="text"
+              placeholder="Search..."
+              class="w-full h-full px-4 py-2 bg-white border-[1px] border-gray-2 00 rounded-lg outline-none focus:border-[3px] focus:border-[#c6e6fa]"
+              v-model="search_value"
+              @keyup="handleSearch"
+            />
+
+            <div
+              class="absolute top-[-3px] right-4 -translate-y-[-50%] cursor-pointer p-1"
+              @click="is_show.search = !is_show.search"
+            >
+              <Icon name="material-symbols:close" class="text-text" size="20px" />
+            </div>
           </div>
         </div>
 
@@ -214,14 +293,18 @@ const updateStatus = (user: User) => {
         </div>
       </nav>
 
-      <main class="w-full h-fit mt-3">
+      <main v-if="!is_fetching_friends" class="w-full h-fit mt-3 transition-all duration-300 ease-out">
         <div
           v-if="chatroom_list?.length > 0"
           v-for="item in chatroom_list"
-          class="flexBetween w-full h-fit py-[15px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out"
+          id="pin_parent"
+          class="relative flexBetween w-full h-fit py-[15px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
           :class="item?._id.includes(chatroom_show?._id!) ? 'bg-chatroom_default border-l-[4px]' : 'bg-white border-l-0'"
           @click="handleClickChatroom(item)"
         >
+          <div id="pin" class="absolute top-0 right-9 transition-all duration-200 ease-linear">
+            <Icon name="eos-icons:push-pin-outlined" class="text-text" />
+          </div>
           <div class="flexStart gap-3">
             <div class="relative w-[60px] h-[60px] rounded-2xl">
               <NuxtImg :src="item?.avatar" alt="Avatar.png" class="w-full h-full object-cover rounded-2xl" />
@@ -278,9 +361,12 @@ const updateStatus = (user: User) => {
               </div>
 
               <div v-if="action_type == 'chat'">
-                <h6 :class="item?._id.includes(chatroom_show?._id!) ? 'text-primary' : 'text-text'">
+                <span
+                  class="text-xs"
+                  :class="item?._id.includes(chatroom_show?._id!) ? 'text-primary font-semibold' : 'text-text'"
+                >
                   Hi, i am josephin. How are...
-                </h6>
+                </span>
               </div>
               <div v-if="action_type == 'call'">
                 <div class="flexStart gap-1">
@@ -329,22 +415,75 @@ const updateStatus = (user: User) => {
           </div>
         </div>
 
-        <div v-else class="flexCenter flex-1 w-full h-full">
+        <main v-else class="w-full h-fit mt-3 transition-all duration-300 ease-out">
           <div class="flexCenter flex-col h-fit w-fit px-10 py-16">
             <div class="w-[100px] h-[100px]">
               <NuxtImg src="notfound_chatroom.png" class="w-full h-full object-cover" />
             </div>
             <p class="text-text text-lg font-semibold mt-4 text-center">You have not joined the chat room yet</p>
           </div>
-        </div>
+        </main>
+      </main>
+
+      <main v-else class="w-full h-fit mt-3 transition-all duration-300 ease-out">
+        <Fetching />
       </main>
     </article>
 
     <div
-      class="absolute bottom-6 right-6 flexCenter w-[42px] h-[42px] rounded-full bg-primary text-white hover:bg-[#1280c1]"
-      @click="open()"
+      class="absolute bottom-6 right-6 flexCenter w-[42px] h-[42px] rounded-full bg-primary text-white hover:bg-[#1280c1] cursor-pointer"
+      @click="is_show.new_menu = !is_show.new_menu"
     >
       <Icon name="material-symbols:add-rounded" size="22px" />
+    </div>
+
+    <div
+      v-if="is_show.new_menu"
+      class="absolute bottom-[68px] right-10 w-fit h-fit bg-white shadow-xl rounded-md transition-all duration-500 ease-out"
+    >
+      <ul>
+        <li
+          class="py-2 px-2 hover:bg-chatroom_default cursor-pointer transition-all duration-200 ease-linear"
+          @click="openCreateNewChat"
+        >
+          <div class="flexEnd px-4 gap-4">
+            <h1 class="text-sm font-semibold text-title">New Chat</h1>
+            <button
+              class="flexCenter rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] text-primary bg-[#ddf0fc] hover:bg-[#c6e6fa] cursor-pointer"
+            >
+              <Icon name="ic:outline-chat-bubble-outline" size="15px" />
+            </button>
+          </div>
+        </li>
+
+        <li
+          class="py-2 px-2 hover:bg-chatroom_default cursor-pointer transition-all duration-200 ease-linear"
+          @click="openCreateCall"
+        >
+          <div class="flexEnd px-4 gap-4">
+            <h1 class="text-sm font-semibold text-title">New Call</h1>
+            <button
+              class="rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] text-[#3fcc35] bg-[#e2f7e1] hover:bg-[#cff2cc] cursor-pointer"
+            >
+              <Icon name="ph:phone" size="18px" />
+            </button>
+          </div>
+        </li>
+
+        <li
+          class="py-2 px-2 hover:bg-chatroom_default cursor-pointer transition-all duration-200 ease-linear"
+          @click="openCreateChatroom"
+        >
+          <div class="flexEnd px-4 gap-4">
+            <h1 class="text-sm font-semibold text-title">New Room</h1>
+            <button
+              class="rounded-full transition-all duration-300 ease-linear w-[34px] h-[34px] bg-[#ffe5df] text-error hover:bg-[#ffd3ca] cursor-pointer"
+            >
+              <Icon name="material-symbols:group-outline-rounded" size="18px" />
+            </button>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 
@@ -358,9 +497,6 @@ const updateStatus = (user: User) => {
 .carousel__prev,
 .carousel__next {
   display: none !important;
-}
-.gradient {
-  box-shadow: rgba(50, 50, 93, 0.25) 0px 30px 20px -12px inset, rgba(0, 0, 0, 0.3) 0px -4px 36px -18px inset;
 }
 
 .line {
@@ -380,6 +516,25 @@ const updateStatus = (user: User) => {
 }
 .load-3 .line:nth-last-child(3) {
   animation: loadingC 0.6s 0.3s linear infinite;
+}
+
+.avatar_shadow {
+  border-radius: 15px;
+  box-shadow: inset 0 -25px 30px 6px rgba(0, 0, 0, 0.8);
+  content: '';
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+#pin_parent:hover #pin {
+  display: block !important;
+}
+
+#pin {
+  display: none;
 }
 
 @keyframes loadingC {

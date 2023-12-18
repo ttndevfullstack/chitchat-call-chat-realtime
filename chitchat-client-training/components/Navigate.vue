@@ -6,7 +6,9 @@ const { signOut } = useAuth();
 </script>
 
 <template>
-  <nav class="h-full w-full bg-nav_default flex flex-col border-r-4 border-[#d6eaf7]">
+  <nav
+    class="h-full w-full bg-nav_default flex flex-col border-r-4 border-[#d6eaf7] transition-all duration-300 ease-linear"
+  >
     <NuxtLink to="/" class="flexCenter w-full h-[114px] border-b-[1px] border-gray-200 cursor-pointer">
       <img src="/logo2.png" alt="logo.png" />
     </NuxtLink>

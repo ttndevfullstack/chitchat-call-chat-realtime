@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateChannelDto } from './dto/create-channel.dto';
@@ -45,16 +41,50 @@ export class ChannelService {
   }
 
   public async joinToChannel(id: string, email: string) {
-    const channel = await this.channelModel.findOneAndUpdate(
+    const channel = await this.channelModel.findOne({ room_id: id });
+    if (!channel) throw new NotFoundException('Channel not found');
+
+    if (channel.participants) {
+      if (channel.participants.includes(email)) {
+        return {
+          status: 201,
+          success: true,
+          data: channel,
+        };
+      }
+    }
+
+    const updated_channel = await this.channelModel.findOneAndUpdate(
       { room_id: id },
-      { $push: { participants: email } },
+      { participants: [...channel.participants, email] },
       { new: true },
     );
 
     return {
       status: 201,
       success: true,
-      data: channel,
+      data: updated_channel,
+    };
+  }
+
+  public async leftChannel(id: string, email: string) {
+    const channel = await this.channelModel.findOne({ room_id: id });
+    if (!channel) throw new NotFoundException('Channel not found');
+
+    const updated_participates = channel.participants.filter(
+      (participant) => !participant.includes(email),
+    );
+
+    const updatedChannel = await this.channelModel.findOneAndUpdate(
+      { room_id: id },
+      { participants: updated_participates },
+      { new: true },
+    );
+
+    return {
+      status: 201,
+      success: true,
+      data: updatedChannel,
     };
   }
 
