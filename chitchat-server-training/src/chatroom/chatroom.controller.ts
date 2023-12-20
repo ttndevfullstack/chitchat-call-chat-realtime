@@ -12,6 +12,7 @@ import { ChatroomService } from './chatroom.service';
 import { CreateChatroomDto } from './dto/create-chatroom.dto';
 import { UpdateChatroomDto } from './dto/update-chatroom.dto';
 import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
+import { GetChatRoomParams } from './dto/get-chatroom-params';
 
 @UseGuards(JwtAuthGuard)
 @Controller('chatroom')
@@ -19,7 +20,7 @@ export class ChatroomController {
   constructor(private readonly chatroomService: ChatroomService) {}
 
   @Post('all')
-  findAllOfUser(@Body() params: any) {
+  findAllOfUser(@Body() params: GetChatRoomParams) {
     return this.chatroomService.findAllByEmail(params);
   }
 

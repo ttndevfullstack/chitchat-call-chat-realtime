@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChatroomDto } from './dto/create-chatroom.dto';
 import { UpdateChatroomDto } from './dto/update-chatroom.dto';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,6 +6,7 @@ import { Chatroom } from 'src/schema/chatroom.schema';
 import { Model } from 'mongoose';
 import { UserService } from 'src/user/user.service';
 import { GetChatRoomParams } from './dto/get-chatroom-params';
+import { ChatroomType } from 'src/common/enums/enums';
 
 @Injectable()
 export class ChatroomService {
@@ -31,30 +28,35 @@ export class ChatroomService {
 
   public async findAllByEmail(params: GetChatRoomParams) {
     let chatrooms;
-    if (params.room_type === 'direct') {
-      chatrooms = await this.chatroomModel.find({
-        $and: [
-          {
-            $or: [
-              { roomMaster: params.email },
-              { members: { $in: [params.email] } },
-            ],
-          },
-          { total_member: { $lte: 2 } },
-        ],
-      });
+
+    if (params.type === ChatroomType.DIRECT) {
+      chatrooms = await this.chatroomModel
+        .find({
+          $and: [
+            {
+              $or: [
+                { roomMaster: params.email },
+                { members: { $in: [params.email] } },
+              ],
+            },
+            { type: ChatroomType.DIRECT },
+          ],
+        })
+        .sort({ createdAt: -1 });
     } else {
-      chatrooms = await this.chatroomModel.find({
-        $and: [
-          {
-            $or: [
-              { roomMaster: params.email },
-              { members: { $in: [params.email] } },
-            ],
-          },
-          { total_member: { $gt: 2 } },
-        ],
-      });
+      chatrooms = await this.chatroomModel
+        .find({
+          $and: [
+            {
+              $or: [
+                { roomMaster: params.email },
+                { members: { $in: [params.email] } },
+              ],
+            },
+            { type: ChatroomType.GROUP },
+          ],
+        })
+        .sort({ createdAt: -1 });
     }
 
     return {
@@ -79,20 +81,42 @@ export class ChatroomService {
   }
 
   public async create(createChatroomDto: CreateChatroomDto) {
-    const createdChatroom = new this.chatroomModel({
-      ...createChatroomDto,
-      name: createChatroomDto.name,
-    });
+    let chatroom;
 
-    await createdChatroom.save();
+    if (createChatroomDto.type == ChatroomType.DIRECT) {
+      chatroom = await this.chatroomModel.findOne({
+        $and: [
+          { members: { $in: createChatroomDto.members[0] } },
+          { members: { $in: createChatroomDto.members[1] } },
+          { type: ChatroomType.DIRECT },
+        ],
+      });
 
-    if (!createdChatroom)
-      throw new BadRequestException('Create chatroom failure');
+      if (!chatroom) {
+        chatroom = await this.chatroomModel.create({
+          ...createChatroomDto,
+          type: ChatroomType.DIRECT,
+        });
+      }
+    }
+
+    if (createChatroomDto.type == ChatroomType.GROUP) {
+      chatroom = await this.chatroomModel.create({
+        ...createChatroomDto,
+        type: ChatroomType.GROUP,
+      });
+    }
+
+    const response = await this.userService.findAllUserInRoom(chatroom.members);
+    const member_details = response.data;
 
     return {
       status: 201,
       success: true,
-      data: createdChatroom,
+      data: {
+        chatroom,
+        member_details,
+      },
     };
   }
 

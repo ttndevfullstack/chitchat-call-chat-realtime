@@ -51,6 +51,11 @@ export class UserController {
     return this.userService.addFriend(updateFriendDto);
   }
 
+  @Post('unfriend')
+  unFriend(@Body() updateFriendDto: UpdateFriendDto) {
+    return this.userService.unFriend(updateFriendDto);
+  }
+
   @Patch(':email')
   update(@Param('email') email: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(email, updateUserDto);

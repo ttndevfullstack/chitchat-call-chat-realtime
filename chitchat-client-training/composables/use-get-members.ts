@@ -7,7 +7,9 @@ export default function useGetMembers(params?: UnwrapRef<any>, options?: any) {
   const query = useQuery(
     ['members', params],
     () => {
-      return $api.user.getAllUser();
+      const { chatroom_id } = params.value;
+      if (!chatroom_id) return;
+      return $api.chatroom.getAllMember(chatroom_id);
     },
     {
       refetchOnWindowFocus: false,

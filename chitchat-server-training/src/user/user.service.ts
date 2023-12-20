@@ -12,6 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User } from 'src/schema/user.schema';
 import { Model } from 'mongoose';
 import { UpdateFriendDto } from './dto/update-friend.dto';
+import { ChatroomService } from 'src/chatroom/chatroom.service';
 
 @Injectable()
 export class UserService {
@@ -85,30 +86,54 @@ export class UserService {
   }
 
   public async addFriend(updateFriendDto: UpdateFriendDto) {
-    const friend = await this.userModel.findOne({
-      email: updateFriendDto.email_friend,
-    });
-    if (!friend) throw new NotFoundException('Friend not found');
-
     const user = await this.userModel.findOne({
       email: updateFriendDto.email,
     });
     if (!user) throw new NotFoundException('User not found');
 
-    await this.userModel.findOneAndUpdate(
+    const updated_friend = user.friends.includes(updateFriendDto.email_friend)
+      ? user.friends
+      : [...user.friends, updateFriendDto.email_friend];
+
+    const updated_user = await this.userModel.findOneAndUpdate(
       { email: user.email },
-      { friends: [...user.friends, updateFriendDto.email_friend] },
+      { friends: updated_friend },
+      { new: true },
     );
 
     return {
       status: 201,
       success: true,
-      data: friend,
+      data: updated_user,
+    };
+  }
+
+  public async unFriend(updateFriendDto: UpdateFriendDto) {
+    const user = await this.userModel.findOne({
+      email: updateFriendDto.email,
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const updated_friend = user.friends.includes(updateFriendDto.email_friend)
+      ? user.friends.filter((friend) => friend !== updateFriendDto.email_friend)
+      : user.friends;
+
+    const updated_user = await this.userModel.findOneAndUpdate(
+      { email: user.email },
+      { friends: updated_friend },
+      { new: true },
+    );
+
+    return {
+      status: 201,
+      success: true,
+      data: updated_user,
     };
   }
 
   public async findAllUserInRoom(members: string[]) {
     const users = await this.userModel.find({ email: { $in: members } });
+
     return {
       status: 201,
       success: true,
@@ -127,7 +152,6 @@ export class UserService {
 
   public async create(createUserDto: CreateUserDto) {
     const user = await this.userModel.findOne({ email: createUserDto.email });
-
     if (user) throw new BadRequestException('User is exist');
 
     const saltOrRounds = config().security.bcryptSaltOrRound;
@@ -147,7 +171,6 @@ export class UserService {
 
   public async update(email: string, updateUserDto: UpdateUserDto) {
     const user = await this.userModel.findOne({ email });
-
     if (!user) throw new NotFoundException('User not found');
 
     const updatedUser = await this.userModel.updateOne(
@@ -164,7 +187,6 @@ export class UserService {
 
   public async remove(email: string) {
     const deletedUser = await this.userModel.findOneAndDelete({ email });
-
     if (!deletedUser) throw new NotFoundException('User not found');
 
     return {

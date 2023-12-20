@@ -2,44 +2,38 @@
 import type { User } from '~/types/common';
 import { useToast } from 'vue-toastification';
 import { VueFinalModal } from 'vue-final-modal';
-import userGetUsers from '@/composables/use-get-users';
+import useGetUsers from '@/composables/use-get-users';
 import useApi from '@/plugins/api';
+import type { BaseResponse } from '~/types/base-response';
 
-defineProps<{
-  title?: string;
-}>();
+const emit = defineEmits(['create:newChat', 'confirm']);
 
-const emit = defineEmits<{
-  (e: 'confirm'): void;
-}>();
-const $api = useApi();
-const toast = useToast();
 const { data }: { data: any } = useAuth();
 const user_email = data?.value?.user?.email;
+const $api = useApi();
+const toast = useToast();
+const current_user = ref<any>();
 const user_list = ref<User[]>([]);
-const friend_list = ref<User[]>([]);
 const search_value = ref<string>('');
 
 const params = computed(() => ({
   email: user_email,
 }));
+const { users, isFetching } = useGetUsers();
+const { user } = useGetUser(params);
 
-const { users, isFetching } = userGetUsers();
-const { friends } = useGetFriends(params);
-
+watch(
+  () => user.value,
+  (value) => (current_user.value = value),
+  { deep: true },
+);
 watch(
   () => users.value,
   (value) => (user_list.value = value),
   { deep: true },
 );
-watch(
-  () => friends.value,
-  (value) => (friend_list.value = value),
-  { deep: true },
-);
 
 user_list.value = users.value.filter((user: User) => user.email !== user_email);
-friend_list.value = friends.value;
 
 const handleSearch = () => {
   const searchText = search_value.value.toLowerCase().trim();
@@ -51,10 +45,15 @@ const handleSearch = () => {
   }
 };
 
+const handleClickChat = (email: string) => {
+  emit('create:newChat', email);
+  emit('confirm');
+};
+
 const addFriend = (email_friend: string) => {
-  $api.user.addFriend(user_email, email_friend).then((data) => {
+  $api.user.addFriend(user_email, email_friend).then((data: BaseResponse) => {
     if (data.success) {
-      friend_list.value.push(data.data);
+      current_user.value = { ...current_user.value, friends: data.data.friends };
       toast.success('Add friend success');
     } else {
       toast.error('Add friend fail');
@@ -63,12 +62,12 @@ const addFriend = (email_friend: string) => {
 };
 
 const unFriend = (email_friend: string) => {
-  $api.user.unFriend(user_email, email_friend).then((data) => {
+  $api.user.unFriend(user_email, email_friend).then((data: BaseResponse) => {
     if (data.success) {
-      friend_list.value.push(data.data);
-      toast.success('Add friend success');
+      current_user.value = { ...current_user.value, friends: data.data.friends };
+      toast.success('Unfriend success');
     } else {
-      toast.error('Add friend fail');
+      toast.error('Unfriend fail');
     }
   });
 };
@@ -79,7 +78,7 @@ const unFriend = (email_friend: string) => {
     <div class="flexCenter w-full h-screen">
       <section class="flex flex-col w-[500px] h-[540px] bg-white rounded-xl overflow-hidden">
         <header class="relative w-full text-left bg-[#ddf0fc] px-8 py-5 text-primary">
-          <p class="text-primary text-2xl font-bold">Create New Message</p>
+          <p class="text-primary text-2xl font-bold">Create New Chat</p>
           <div class="absolute flexCenter top-[-77px] right-[-75px] w-[150px] h-[150px] bg-primary rounded-full">
             <div
               class="absolute bottom-6 left-8 h-fit w-fit transition-all duration-200 ease-linear hover:rotate-90 cursor-pointer"
@@ -112,7 +111,7 @@ const unFriend = (email_friend: string) => {
             <div
               v-for="user in user_list"
               id="user_item"
-              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
+              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:bg-chatroom_default"
             >
               <div id="pin" class="absolute top-0 right-9 transition-all duration-200 ease-linear">
                 <Icon name="eos-icons:push-pin-outlined" class="text-text" />
@@ -120,7 +119,11 @@ const unFriend = (email_friend: string) => {
 
               <div class="flex gap-4">
                 <div class="relative w-[50px] h-[50px] rounded-2xl">
-                  <NuxtImg :src="user?.avatar" alt="Avatar.png" class="w-full h-full object-cover rounded-2xl" />
+                  <NuxtImg
+                    :src="user?.avatar ? user?.avatar : '/default-avata.webp'"
+                    alt="Avatar.png"
+                    class="w-full h-full object-cover rounded-2xl"
+                  />
                 </div>
 
                 <div class="flex flex-col gap-2">
@@ -129,13 +132,14 @@ const unFriend = (email_friend: string) => {
                     <div class="flex w-fit h-full mr-auto">
                       <div
                         class="flexCenter gap-1 h-fit w-fit px-2 py-1 cursor-pointer transition-all duration-200 ease-linear bg-[#4cb6f6] hover:bg-primary text-white rounded-full mr-2"
+                        @click="handleClickChat(user.email)"
                       >
                         <Icon name="ic:outline-chat-bubble-outline" class="mt-[1px]" size="14px" />
                         <p class="text-xs text-current font-normal">Chat</p>
                       </div>
 
                       <div
-                        v-if="user?.friends?.includes(user_email)"
+                        v-if="current_user?.friends?.includes(user.email)"
                         class="flexCenter gap-1 h-fit w-fit px-2 py-1 text-[#3fcc35] bg-[#e2f7e1] hover:bg-[#cff2cc] cursor-pointer rounded-full"
                         @click="unFriend(user.email)"
                       >
@@ -166,3 +170,13 @@ const unFriend = (email_friend: string) => {
     </div>
   </VueFinalModal>
 </template>
+
+<style scoped>
+#pin_parent:hover #pin {
+  display: block !important;
+}
+
+#pin {
+  display: none;
+}
+</style>

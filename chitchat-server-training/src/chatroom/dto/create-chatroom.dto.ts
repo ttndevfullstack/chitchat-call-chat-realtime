@@ -5,7 +5,10 @@ export class CreateChatroomDto {
   name?: string;
 
   @IsNotEmpty()
-  roomMaster: string;
+  room_master: string;
+
+  @IsNotEmpty()
+  type: string;
 
   @IsNotEmpty()
   members: string[];

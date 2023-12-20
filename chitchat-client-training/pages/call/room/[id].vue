@@ -13,10 +13,9 @@ const ws_url = runtimeConfig.public.websocket;
 const io = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
 
 let localStream;
-const remoteStream = ref([]);
+const remoteStream = ref({});
 const channel = ref();
-const peerConnections = ref([]);
-const answer_created = ref([]);
+const peerConnections = ref({});
 const user_email = data?.value?.user?.email;
 const room_id = route?.params?.id;
 
@@ -83,7 +82,9 @@ const handleUserJoined = async (data) => {
 };
 
 const handleUserLeft = (data) => {
-  document.getElementById(data.email).remove();
+  if (document.getElementById(data.email)) {
+    document.getElementById(data.email).remove();
+  }
   console.log(data.email + ' left the channel');
 }
 
@@ -97,7 +98,7 @@ const handleMessageFromPeer = async (data) => {
 
   if(data?.type === 'answer') {
     // If is user create this answer and answer is added => return
-    if (user_email.includes(data.email) || answer_created.value.includes(data.email)) return;
+    if (user_email.includes(data.email)) return;
     await addAnswer(data);
   }
 
@@ -146,6 +147,10 @@ const createPeerConnection = async (data) => {
 
   // Create and set MediaStream for remote user
   data.channel.participants.forEach(participant => {
+    if (!peerConnections.value[participant]) {
+      peerConnections.value[participant] = new RTCPeerConnection(servers);
+    }
+
     if (participant.includes(user_email) || remoteStream.value[participant]) return;
 
     remoteStream.value[participant] = new MediaStream();
@@ -153,13 +158,13 @@ const createPeerConnection = async (data) => {
     if (!user_email.includes(participant)) {
       document.getElementById(participant).srcObject = remoteStream.value[participant];
     }
-
-    peerConnections.value[user_email].ontrack = (event) => {
-      event.streams[0].getTracks().forEach((track) => {
-        remoteStream.value[participant].addTrack(track)
-      })
-    }
   })
+
+  peerConnections.value[user_email].ontrack = (event) => {
+    event.streams[0].getTracks().forEach((track) => {
+      remoteStream.value[participant].addTrack(track)
+    })
+  }
 
   if(!localStream) {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);

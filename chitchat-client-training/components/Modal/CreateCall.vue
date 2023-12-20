@@ -44,7 +44,7 @@ const handleSearch = () => {
     <div class="flexCenter w-full h-screen">
       <section class="flex flex-col w-[500px] h-[540px] bg-white rounded-xl overflow-hidden">
         <header class="relative w-full text-left bg-[#ddf0fc] px-8 py-5 text-primary">
-          <p class="text-primary text-2xl font-bold">Create New Message</p>
+          <p class="text-primary text-2xl font-bold">Create New Call</p>
           <div class="absolute flexCenter top-[-77px] right-[-75px] w-[150px] h-[150px] bg-primary rounded-full">
             <div
               class="absolute bottom-6 left-8 h-fit w-fit transition-all duration-200 ease-linear hover:rotate-90 cursor-pointer"
@@ -85,7 +85,11 @@ const handleSearch = () => {
 
               <div class="flex gap-4">
                 <div class="relative w-[50px] h-[50px] rounded-2xl">
-                  <NuxtImg :src="user?.avatar" alt="Avatar.png" class="w-full h-full object-cover rounded-2xl" />
+                  <NuxtImg
+                    :src="user?.avatar ? user?.avatar : '/default-avata.webp'"
+                    alt="Avatar.png"
+                    class="w-full h-full object-cover rounded-2xl"
+                  />
                 </div>
 
                 <div class="flex flex-col gap-2">

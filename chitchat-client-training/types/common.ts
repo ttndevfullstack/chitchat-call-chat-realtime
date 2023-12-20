@@ -1,3 +1,8 @@
+export enum ChatroomType {
+  DIRECT = 'direct',
+  GROUP = 'group',
+}
+
 export type Message = {
   _id?: string;
   chatroom_id: string;
@@ -27,4 +32,5 @@ export type Chatroom = {
   members: string[];
   status: string;
   total_member: string;
+  type: string;
 };

@@ -7,7 +7,8 @@ export default function useGetChatrooms(params?: UnwrapRef<any>, options?: any) 
   const query = useQuery(
     ['chatrooms', params],
     () => {
-      if (!params?.value?.email) return;
+      const { email, type } = params.value;
+      if (!email || !type) return;
       return $api.chatroom.getAllChatroomByEmail(params?.value);
     },
     {

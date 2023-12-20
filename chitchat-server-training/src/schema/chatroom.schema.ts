@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { HydratedDocument } from 'mongoose';
-import { UserStatus } from 'src/common/enums/enums';
+import {
+  ChatroomType,
+  RecentlyMessageStatus,
+  UserStatus,
+} from 'src/common/enums/enums';
+import { User } from './user.schema';
+import { Message } from './message.schema';
 
 export type ChatroomDocument = HydratedDocument<Chatroom>;
 
@@ -24,11 +30,20 @@ export class Chatroom {
   @Prop({ type: [String], ref: 'Message', default: [] })
   messages: string[];
 
-  @Prop({ default: false, select: false })
-  is_delete: boolean;
+  @Prop({ default: RecentlyMessageStatus.NOTSEEN })
+  latest_message_status: RecentlyMessageStatus;
+
+  @Prop({ type: Message, ref: 'Message', default: null })
+  latest_message: Message;
 
   @Prop({ type: String, default: 'offline' })
   status: UserStatus;
+
+  @Prop({ type: String, required: true })
+  type: ChatroomType;
+
+  @Prop({ default: false, select: false })
+  is_delete: boolean;
 
   @Prop({ type: [mongoose.Schema.Types.ObjectId], ref: 'Channel', default: [] })
   channels: mongoose.Schema.Types.ObjectId[];

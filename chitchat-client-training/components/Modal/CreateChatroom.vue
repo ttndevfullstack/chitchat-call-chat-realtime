@@ -84,7 +84,11 @@ const handleSearch = () => {
 
           <div class="flex gap-4">
             <div class="relative w-[50px] h-[50px] rounded-2xl">
-              <NuxtImg :src="user?.avatar" alt="Avatar.png" class="w-full h-full object-cover rounded-2xl" />
+              <NuxtImg
+                :src="user?.avatar ? user?.avatar : '/default-avata.webp'"
+                alt="Avatar.png"
+                class="w-full h-full object-cover rounded-2xl"
+              />
             </div>
 
             <div class="flex flex-col gap-2">

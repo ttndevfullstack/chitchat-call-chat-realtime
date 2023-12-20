@@ -3,6 +3,10 @@ import { BaseApi } from '@/api/base';
 export class UserAPI extends BaseApi {
   private prefix = '/user';
 
+  getUser(email: string): Promise<any> {
+    return this.get(this.prefix + '/' + email);
+  }
+
   getAllUser(): Promise<any> {
     return this.get(this.prefix + '/all');
   }

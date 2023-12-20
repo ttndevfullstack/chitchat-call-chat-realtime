@@ -1,12 +1,13 @@
 <script lang="ts" setup>
-import type { Chatroom, Message, User } from '@/types/common';
+import { ChatroomType, type Chatroom, type Message, type User } from '@/types/common';
 import useApi from '@/plugins/api';
 import useSocketIO from '@/plugins/socket-io';
 import useGetMembers from '@/composables/use-get-members';
 import useGetMessages from '@/composables/use-get-messages';
 import getFormattedTimestamp from '@/helpers/getFormattedTimestamp';
 
-const { data } = useAuth();
+const { data, getSession } = useAuth();
+const session = await getSession();
 const $io = useSocketIO();
 const $api = useApi();
 const chatroom_show = ref<Chatroom | null>(null);
@@ -16,6 +17,9 @@ const message_list = ref<Message[]>([]);
 const member_list = ref<User[]>([]);
 const message_status = ref<string>('');
 const user_email = data.value?.user?.email;
+const is_show = ref({
+  menu: false,
+});
 
 const params = computed(() => ({
   chatroom_id: chatroom_show.value?._id,
@@ -79,7 +83,6 @@ const sendMessage = () => {
     });
   } catch (error) {
   } finally {
-    console.log('finally');
     message_content.value = '';
     document.getElementById('send')?.focus();
   }
@@ -115,13 +118,17 @@ const hiddenNavigation = (value: boolean) => {
         <div class="relative flex flex-col h-screen w-full pb-[94px]">
           <!-- Chat Header -->
           <div class="absolute top-[45px] left-0 lg:px-[45px] md:px-6 w-full">
-            <header class="flexBetween px-[30px] py-[20px] bg-white w-full h-full">
+            <header class="relative flexBetween px-[30px] py-[20px] bg-white w-full h-full">
               <div class="flexCenter gap-5">
                 <div
                   v-if="chatroom_show"
                   class="w-[60px] h-[60px] rounded-2xl overflow-hidden transition-all duration-300 ease-out"
                 >
-                  <NuxtImg :src="chatroom_show?.avatar" alt="Avatar.png" class="w-full h-full object-cover" />
+                  <NuxtImg
+                    :src="chatroom_show?.avatar ? chatroom_show?.avatar : '/default-avata.webp'"
+                    alt="Avatar.png"
+                    class="w-full h-full object-cover"
+                  />
                   <!-- <div
                 class="absolute top-1 right-1 w-[6px] h-[6px] border-white border-[1px] border-solid"
                 :class="{ item?.status === 'online' ? 'bg-accent' : 'bg-error' }"
@@ -132,7 +139,7 @@ const hiddenNavigation = (value: boolean) => {
                   v-if="chatroom_show"
                   class="flex flex-col gap-[10px] text-white w-fit border-r-[1px] border-gray-400 transition-all duration-300 ease-out pr-4"
                 >
-                  <div v-if="chatroom_show?.total_member.toString() == '2'">
+                  <div v-if="chatroom_show?.type == ChatroomType.DIRECT">
                     <h5 v-if="chatroom_show?.members[0]?.includes(user_email!)">{{ chatroom_show?.members[1] }}</h5>
                     <h5 v-else>{{ chatroom_show?.members[0] }}</h5>
                   </div>
@@ -141,7 +148,7 @@ const hiddenNavigation = (value: boolean) => {
                     <h5>{{ chatroom_show?.name }}</h5>
                   </div>
 
-                  <div v-if="chatroom_show?.total_member.toString() == '2'">
+                  <div v-if="chatroom_show?.type == ChatroomType.DIRECT">
                     <div v-for="(member, index) in member_list" :key="index">
                       <div v-if="chatroom_show?.members.includes(member.email) && !member.email.includes(user_email!)">
                         <div v-if="member?.status == 'online'">
@@ -201,7 +208,12 @@ const hiddenNavigation = (value: boolean) => {
                   content="All Apps"
                   transparent
                   :hover="false"
+                  @click="is_show.menu = !is_show.menu"
                 />
+              </div>
+
+              <div v-if="is_show.menu" class="z-50 absolute bottom-[-152px] right-0 w-fit h-fit">
+                <ChatroomHeaderMenu />
               </div>
             </header>
           </div>
@@ -227,7 +239,7 @@ const hiddenNavigation = (value: boolean) => {
                 >
                   <div class="relative flexStart w-[50px] h-[50px] rounded-[20px] mr-2">
                     <NuxtImg
-                      :src="chatroom_show?.avatar"
+                      :src="chatroom_show?.avatar ? chatroom_show?.avatar : '/default-avata.webp'"
                       alt="Avatar"
                       class="w-full h-full object-cover rounded-[20px]"
                     />
@@ -247,7 +259,7 @@ const hiddenNavigation = (value: boolean) => {
                   </div>
 
                   <div class="flex flex-col gap-2">
-                    <div class="flexStart gap-6">
+                    <div class="flexStart gap-4">
                       <h5 v-if="!message_list[index - 1]?.sender.includes(message_list[index]?.sender)">
                         {{ message?.sender }}
                       </h5>
@@ -289,7 +301,7 @@ const hiddenNavigation = (value: boolean) => {
                   class="flexEnd w-full h-full gap-3"
                 >
                   <div class="flex flex-col items-end gap-2">
-                    <div class="flexStart gap-6">
+                    <div class="flexStart gap-4">
                       <h6 class="mt-[2px]">{{ message?.send_at.split(',')[0] }}</h6>
                       <h5 v-if="!message_list[index - 1]?.sender.includes(message_list[index]?.sender)">
                         {{ message?.sender }}
@@ -304,7 +316,7 @@ const hiddenNavigation = (value: boolean) => {
 
                   <div class="relative flexStart w-[50px] h-[50px] rounded-[20px] mr-2">
                     <NuxtImg
-                      :src="chatroom_show?.avatar"
+                      :src="session?.avatar ? session?.avatar : '/default-avata.webp'"
                       alt="Avatar"
                       class="w-full h-full object-cover rounded-[20px]"
                     />
