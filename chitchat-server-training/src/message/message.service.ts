@@ -48,6 +48,10 @@ export class MessageService {
     const createdMessage = new this.messageModel(createMessageDto);
     await createdMessage.save();
 
+    await this.chatroomService.update(createMessageDto.chatroom_id, {
+      latest_message: createMessageDto.content,
+    });
+
     if (!createdMessage)
       throw new BadRequestException('Create message failure');
 

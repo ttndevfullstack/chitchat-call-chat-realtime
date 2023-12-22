@@ -33,4 +33,5 @@ export type Chatroom = {
   status: string;
   total_member: string;
   type: string;
+  latest_message: string;
 };

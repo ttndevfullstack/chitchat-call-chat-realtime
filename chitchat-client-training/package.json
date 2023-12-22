@@ -25,15 +25,18 @@
     "vue-router": "^4.2.5"
   },
   "dependencies": {
+    "@pinia/nuxt": "^0.5.1",
     "@types/socket.io-client": "^3.0.0",
     "axios": "^1.6.2",
+    "mitt": "^3.0.1",
     "next-auth": "^4.21.1",
     "nuxt-socket-io": "^3.0.13",
+    "pinia": "^2.1.7",
     "qs": "^6.11.2",
     "vue-final-modal": "^4.4.6",
-    "vue-tippy": "^6.3.1",
-    "vue3-carousel-nuxt": "^1.1.0",
     "vue-query": "^1.26.0",
-    "vue-toastification": "^2.0.0-rc.5"
+    "vue-tippy": "^6.3.1",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue3-carousel-nuxt": "^1.1.0"
   }
 }

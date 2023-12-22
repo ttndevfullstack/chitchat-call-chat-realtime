@@ -44,11 +44,6 @@ defineProps({
     default: true,
   },
 });
-
-const emit = defineEmits(['click']);
-const handleClick = (e: Event) => {
-  emit('click', e);
-};
 </script>
 
 <template>
@@ -64,7 +59,6 @@ const handleClick = (e: Event) => {
         { 'hover:bg-button_hover': hover },
       ]"
       :style="{ width, height }"
-      @click="handleClick"
     >
       <div v-if="ping" class="container">
         <span class="heartbeat"></span>

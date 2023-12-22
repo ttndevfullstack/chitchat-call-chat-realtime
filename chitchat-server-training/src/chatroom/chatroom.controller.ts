@@ -13,8 +13,9 @@ import { CreateChatroomDto } from './dto/create-chatroom.dto';
 import { UpdateChatroomDto } from './dto/update-chatroom.dto';
 import { JwtAuthGuard } from 'src/guard/jwt-auth.guard';
 import { GetChatRoomParams } from './dto/get-chatroom-params';
+import { UpdateChannelDto } from 'src/channel/dto/update-channel.dto';
 
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 @Controller('chatroom')
 export class ChatroomController {
   constructor(private readonly chatroomService: ChatroomService) {}
@@ -65,6 +66,6 @@ export class ChatroomController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.chatroomService.remove(id);
+    return this.chatroomService.delete(id);
   }
 }

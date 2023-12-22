@@ -55,16 +55,22 @@ export class WebsocketGateway
     console.log(`Client disconnected: ${client.id}`);
   }
 
+  @SubscribeMessage('signal')
+  public async handleSignal(@MessageBody() data: any) {
+    console.log('signal:', data);
+    this.server.emit('signal', data);
+  }
+
   @SubscribeMessage('offer')
   public async handleOffer(@MessageBody() data: any) {
     console.log('offer:', data);
     this.server.emit('offer', data);
   }
 
-  @SubscribeMessage('send_message')
+  @SubscribeMessage('chat_message')
   public async handleSendMessage(created_message: any) {
     console.log(created_message);
-    this.server.emit('send_message', created_message);
+    this.server.emit('chat_message', created_message);
   }
 
   @SubscribeMessage('member_joined')

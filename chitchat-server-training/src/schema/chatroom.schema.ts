@@ -5,14 +5,13 @@ import {
   RecentlyMessageStatus,
   UserStatus,
 } from 'src/common/enums/enums';
-import { User } from './user.schema';
 import { Message } from './message.schema';
 
 export type ChatroomDocument = HydratedDocument<Chatroom>;
 
 @Schema({ timestamps: true })
 export class Chatroom {
-  @Prop({ required: true })
+  @Prop({ default: '' })
   name: string;
 
   @Prop({ default: '' })
@@ -33,8 +32,8 @@ export class Chatroom {
   @Prop({ default: RecentlyMessageStatus.NOTSEEN })
   latest_message_status: RecentlyMessageStatus;
 
-  @Prop({ type: Message, ref: 'Message', default: null })
-  latest_message: Message;
+  @Prop({ type: String, ref: 'Message', default: null })
+  latest_message: string;
 
   @Prop({ type: String, default: 'offline' })
   status: UserStatus;

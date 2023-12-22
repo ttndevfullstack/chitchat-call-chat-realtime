@@ -10,10 +10,12 @@ const emit = defineEmits<{
   (e: 'confirm'): void;
 }>();
 
+const { $createNewGroup }: any = useNuxtApp();
 const { data }: { data: any } = useAuth();
 const user_email = data?.value?.user?.email;
 const search_value = ref<string>('');
 const user_list = ref<User[]>([]);
+const members_new_room = ref<string[]>([user_email]);
 
 const { users, isFetching } = userGetUsers();
 
@@ -23,8 +25,6 @@ watch(
   { deep: true },
 );
 user_list.value = users.value.filter((user: User) => user.email !== user_email);
-
-const handleAddToChatroom = () => {};
 
 const handleSearch = () => {
   const searchText = search_value.value.toLowerCase().trim();
@@ -55,17 +55,15 @@ const handleSearch = () => {
 
       <div class="inputForm">
         <Icon name="mdi:rename-outline" class="text-xl" />
-        <input
-          type="text"
-          class="input"
-          placeholder="Enter chatroom name"
-          v-model="search_value"
-          @keyup="handleSearch"
-        />
+        <input type="text" class="input" placeholder="Enter chatroom name" v-model="chatroom_name" />
       </div>
 
       <div class="flex-column">
         <label>Add Members </label>
+      </div>
+
+      <div class="inputFormMember">
+        <input type="text" class="input" placeholder="Search user" v-model="search_value" @keyup="handleSearch" />
       </div>
 
       <div
@@ -76,7 +74,7 @@ const handleSearch = () => {
         <div
           v-for="user in user_list"
           id="user_item"
-          class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
+          class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] xs:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
         >
           <div id="pin" class="absolute top-0 right-9 transition-all duration-200 ease-linear">
             <Icon name="eos-icons:push-pin-outlined" class="text-text" />
@@ -97,7 +95,7 @@ const handleSearch = () => {
                 <div class="flex w-fit h-full mr-auto">
                   <div
                     class="flexCenter gap-1 h-fit w-fit px-2 py-1 text-[#3fcc35] bg-[#e2f7e1] hover:bg-[#cff2cc] cursor-pointer rounded-full"
-                    @click="handleAddChatroom(user.email)"
+                    @click="members_new_room.push(user.email)"
                   >
                     <Icon name="material-symbols:group-outline-rounded" class="mt-[1px]" />
                     <p class="text-xs text-current font-normal">Add to room</p>
@@ -116,7 +114,7 @@ const handleSearch = () => {
       <div class="flexCenter">
         <button
           class="button-submit transition-all duration-200 ease-linear hover:opacity-75"
-          @click="handleAddToChatroom"
+          @click="$createNewGroup.$on('create:newChatroom', { user_email, members_new_group })"
         >
           Create chatroom
         </button>
@@ -152,6 +150,7 @@ const handleSearch = () => {
   font-weight: 600;
 }
 
+.inputFormMember,
 .inputForm {
   border: 1.5px solid #ecedec;
   border-radius: 10px;
@@ -160,6 +159,15 @@ const handleSearch = () => {
   align-items: center;
   padding-left: 10px;
   transition: 0.2s ease-in-out;
+}
+
+.inputFormMember {
+  height: 34px;
+  margin-bottom: -10px;
+}
+
+.inputFormMember > input::placeholder {
+  font-size: 14px;
 }
 
 .input {
@@ -174,8 +182,9 @@ const handleSearch = () => {
   outline: none;
 }
 
+.inputFormMember:focus-within,
 .inputForm:focus-within {
-  border: 1.5px solid #2d79f3;
+  border: 3px solid #b8e5ff;
 }
 
 .button-submit {

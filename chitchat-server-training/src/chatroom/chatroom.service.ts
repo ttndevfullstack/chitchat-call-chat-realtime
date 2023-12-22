@@ -7,6 +7,7 @@ import { Model } from 'mongoose';
 import { UserService } from 'src/user/user.service';
 import { GetChatRoomParams } from './dto/get-chatroom-params';
 import { ChatroomType } from 'src/common/enums/enums';
+import { UpdateChannelDto } from './../channel/dto/update-channel.dto';
 
 @Injectable()
 export class ChatroomService {
@@ -83,12 +84,14 @@ export class ChatroomService {
   public async create(createChatroomDto: CreateChatroomDto) {
     let chatroom;
 
+    console.log(createChatroomDto);
+
     if (createChatroomDto.type == ChatroomType.DIRECT) {
       chatroom = await this.chatroomModel.findOne({
         $and: [
           { members: { $in: createChatroomDto.members[0] } },
           { members: { $in: createChatroomDto.members[1] } },
-          { type: ChatroomType.DIRECT },
+          { type: createChatroomDto.type },
         ],
       });
 
@@ -101,22 +104,25 @@ export class ChatroomService {
     }
 
     if (createChatroomDto.type == ChatroomType.GROUP) {
+      let group_name;
+      createChatroomDto.members.forEach((member) => {
+        group_name += ', ' + member;
+      });
+
       chatroom = await this.chatroomModel.create({
         ...createChatroomDto,
+        name: createChatroomDto.name || group_name,
         type: ChatroomType.GROUP,
       });
     }
 
-    const response = await this.userService.findAllUserInRoom(chatroom.members);
-    const member_details = response.data;
+    // const response = await this.userService.findAllUserInRoom(chatroom.members);
+    // const member_details = response.data;
 
     return {
       status: 201,
       success: true,
-      data: {
-        chatroom,
-        member_details,
-      },
+      data: chatroom,
     };
   }
 
@@ -149,8 +155,6 @@ export class ChatroomService {
       { new: true },
     );
 
-    // websocket answer
-
     return {
       status: 201,
       success: true,
@@ -172,8 +176,6 @@ export class ChatroomService {
       { new: true },
     );
 
-    // websocket answer
-
     return {
       status: 201,
       success: true,
@@ -183,14 +185,23 @@ export class ChatroomService {
 
   public async update(id: string, updateChatroomDto: UpdateChatroomDto) {
     const chatroom = await this.chatroomModel.findOne({ _id: id });
-
     if (!chatroom) throw new NotFoundException('Chat room not found');
+
+    if (updateChatroomDto.members) {
+      updateChatroomDto.members = [
+        ...chatroom.members,
+        ...updateChatroomDto.members,
+      ];
+    }
+
+    const radam = { ...chatroom, ...updateChatroomDto };
+    console.log(radam);
 
     const updatedChatroom = await this.chatroomModel.findByIdAndUpdate(
       chatroom._id,
       {
-        ...updateChatroomDto,
-        members: { ...chatroom.members, ...updateChatroomDto.members },
+        latest_message: updateChatroomDto.latest_message,
+        members: updateChatroomDto.members,
       },
     );
 
@@ -201,11 +212,10 @@ export class ChatroomService {
     };
   }
 
-  public async remove(id: string) {
+  public async delete(id: string) {
     const deletedChatroom = await this.chatroomModel.findOneAndDelete({
       _id: id,
     });
-
     if (!deletedChatroom) throw new NotFoundException('Chat room not found');
 
     return {

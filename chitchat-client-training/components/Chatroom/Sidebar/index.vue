@@ -1,17 +1,21 @@
 <script lang="ts" setup>
 import 'vue3-carousel/dist/carousel.css';
-import type { Chatroom, User } from '@/types/common';
-import type { BaseResponse } from '~/types/base-response';
+import type { Chatroom, Message, User } from '@/types/common';
+import type { BaseResponse } from '@/types/base-response';
 import { ChatroomType } from '@/types/common';
 import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
+import { truncateString } from '@/helpers/truncate-string';
 import useSocketIO from '@/plugins/socket-io';
 import useGetChatrooms from '@/composables/use-get-chatrooms';
 import useGetFriends from '@/composables/use-get-friends';
+import useApi from '@/plugins/api';
 
 const emit = defineEmits(['update:chatroom_id', 'update:is_hidden']);
 
-const $io = useSocketIO();
+const { $createNewDirect, $createNewGroup, $deleteChatroom }: any = useNuxtApp();
 const { data }: { data: any } = useAuth();
+const $io = useSocketIO();
+const $api = useApi();
 const user_email = data.value?.user?.email;
 const router = useRouter();
 const room_type = ref<string>('direct');
@@ -19,7 +23,7 @@ const action_type = ref<string>('chat');
 const friend_list = ref<User[]>([]);
 const chatroom_show = ref<Chatroom | null>(null);
 const chatroom_list = ref<Chatroom[]>([]);
-const member_list = ref<User[]>([]);
+const user_list = ref<User[]>([]);
 const search_value = ref<string>('');
 const is_show = ref<any>({
   new_menu: false,
@@ -32,7 +36,7 @@ const params = computed(() => ({
   type: room_type.value,
 }));
 
-const { chatrooms, isLoading: roomLoading } = useGetChatrooms(params);
+const { chatrooms, isLoading: id_room_loading } = useGetChatrooms(params);
 const { friends, isLoading: is_fetching_friends } = useGetFriends(params);
 const { users } = useGetUsers();
 
@@ -48,32 +52,84 @@ watch(
   (value) => (friend_list.value = value),
   { deep: true, immediate: true },
 );
+watch(
+  () => users.value,
+  (value) => (user_list.value = value),
+  { deep: true, immediate: true },
+);
 
 onMounted(() => {
   $io.on('user_status', (data: any) => {
     const user: User = JSON.parse(data);
     updateStatus(user);
   });
+
+  $io.on('chat_message', (data: any) => {
+    const message: Message = JSON.parse(data);
+    chatroom_list.value = chatroom_list.value?.map((chatroom) => {
+      if (chatroom?._id?.includes(message?.chatroom_id)) {
+        return { ...chatroom, latest_message: message.content };
+      }
+      return chatroom;
+    });
+  });
 });
 
-const test = (email: string) => {
-  alert(email);
+$createNewDirect.$on('create:newDirect', (data: any) => {
+  createNewChatroom(data.email, data.members, data.type);
+});
+$createNewGroup.$on('create:newChatroom', (data: any) => {
+  createNewChatroom(data.email, data.members, data.type);
+});
+$deleteChatroom.$on('delete:chatroom', () => {
+  deleteChatroom(chatroom_show.value?._id!);
+});
+
+const createNewChatroom = (email: string, members: string[], type: string) => {
+  console.log('create');
+
+  let new_chatroom;
+
+  if (type === ChatroomType.DIRECT) {
+    new_chatroom = {
+      room_master: email,
+      type: ChatroomType.DIRECT,
+      members: members,
+    };
+  }
+
+  if (type === ChatroomType.GROUP) {
+    new_chatroom = {
+      room_master: email,
+      type: ChatroomType.GROUP,
+      members: members,
+    };
+  }
+
+  $api.chatroom.create(new_chatroom).then((data: BaseResponse) => {
+    if (data.success && data.data) {
+      const is_new_chatroom = !chatroom_list.value.some((chatroom) => chatroom._id === data.data._id);
+
+      if (is_new_chatroom) {
+        chatroom_list.value = [data.data, ...chatroom_list.value];
+      }
+
+      is_show.value.new_menu = false;
+      room_type.value = data.data.type;
+      chatroom_show.value = data.data;
+      emit('update:chatroom_id', data.data);
+    }
+  });
 };
 
-const createNewDirectChat = (email: string) => {
-  const newDirectChatroom = {
-    name: email,
-    room_master: user_email,
-    type: ChatroomType.DIRECT,
-    members: [email, user_email],
-  };
+const deleteChatroom = (id: string) => {
+  if (!id) return;
 
-  $api.chatroom.create(newDirectChatroom).then((data: BaseResponse) => {
+  $api.chatroom.remove(id).then((data: BaseResponse) => {
+    console.log(data.data);
     if (data.success && data.data) {
-      chatroom_list.value = [data.data.chatroom, ...chatroom_list.value];
-      is_show.value.new_menu = false;
-      console.log(is_show.value.new_menu);
-      emit('update:chatroom_id', data.data.chatroom);
+      chatroom_list.value = chatroom_list.value.filter((chatroom) => !chatroom._id?.includes(data.data._id));
+      chatroom_show.value = null;
     }
   });
 };
@@ -120,9 +176,9 @@ const updateStatus = (user: User) => {
     if (!friend.email.includes(user?.email)) return friend;
     return { ...friend, status: user.status };
   });
-  const updated_member_status = member_list.value.map((member) => {
-    if (!member.email.includes(user?.email)) return member;
-    return { ...member, status: user.status };
+  const updated_user_status = user_list.value.map((user) => {
+    if (!user.email.includes(user?.email)) return user;
+    return { ...user, status: user.status };
   });
   const updated_chatroom_status = chatroom_list.value.map((chatroom) => {
     if (chatroom.members.includes(user_email)) return chatroom;
@@ -130,7 +186,7 @@ const updateStatus = (user: User) => {
   });
 
   friend_list.value = updated_friend_status;
-  member_list.value = updated_member_status;
+  user_list.value = updated_user_status;
   chatroom_list.value = updated_chatroom_status;
 };
 </script>
@@ -286,13 +342,13 @@ const updateStatus = (user: User) => {
           </div>
         </nav>
 
-        <main v-if="!roomLoading" class="w-full h-fit mt-3 transition-all duration-300 ease-out">
+        <main v-if="!id_room_loading" class="w-full h-fit mt-3 transition-all duration-300 ease-out">
           <template v-if="chatroom_list?.length > 0">
             <div
               v-for="(item, index) in chatroom_list"
               :key="index"
               id="pin_parent"
-              class="relative flexBetween w-full h-fit py-[15px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
+              class="relative flexBetween w-full h-fit py-[15px] border-primary border-solid lg:px-[30px] xs:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
               :class="item?._id?.includes(chatroom_show?._id!) ? 'bg-chatroom_default border-l-[4px]' : 'bg-white border-l-0'"
               @click="handleClickChatroom(item)"
             >
@@ -304,27 +360,16 @@ const updateStatus = (user: User) => {
                 />
               </div>
 
-              <div class="flexStart gap-3">
+              <div v-if="item?.type == ChatroomType.GROUP" class="flexStart gap-3">
                 <div class="relative w-[60px] h-[60px] rounded-2xl">
-                  <!-- <div v-if="item?.type == ChatroomType.GROUP" class="w-[60px] h-[60px]"> -->
                   <NuxtImg
                     :src="item?.avatar ? item?.avatar : '/default-avata.webp'"
                     alt="Avatar.png"
                     class="w-full h-full object-cover rounded-2xl"
                   />
-                  <!-- </div> -->
-
-                  <!-- <div v-else v-for="(user, index) in users" :key="index" class="w-[60px] h-[60px]">
-                    <NuxtImg
-                      v-if="item.members?.includes(user.email) && !user.email?.includes(user_email)"
-                      :src="user.avatar ? user.avatar : '/default-avata.webp'"
-                      alt="Avatar.png"
-                      class="w-full h-full object-cover rounded-2xl"
-                    />
-                  </div> -->
 
                   <div
-                    v-if="member?.status == 'online'"
+                    v-if="item?.status === 'online'"
                     class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
                   ></div>
                   <div
@@ -333,30 +378,76 @@ const updateStatus = (user: User) => {
                   ></div>
                 </div>
 
-                <div class="flex flex-col gap-2">
-                  <div v-if="item?.type == ChatroomType.DIRECT">
-                    <h5 v-if="item?.members[0]?.includes(user_email)">{{ item?.members[1] }}</h5>
-                    <h5 v-else>{{ item?.members[0] }}</h5>
-                  </div>
-
-                  <div v-else>
-                    <h5>{{ item?.name }}</h5>
-                  </div>
+                <div class="flex flex-col gap-[6px]">
+                  <h5>{{ item?.name }}</h5>
 
                   <div v-if="action_type == 'chat'">
                     <span
                       class="text-xs"
                       :class="item?._id?.includes(chatroom_show?._id!) ? 'text-primary font-semibold' : 'text-text'"
                     >
-                      Hi, i am josephin. How are...
+                      {{ truncateString(item?.latest_message, 30) }}
                     </span>
                   </div>
+
                   <div v-if="action_type == 'call'">
                     <div class="flexStart gap-1">
                       <Icon name="iconamoon:arrow-bottom-left-1-light" class="bg-transparent text-accent" size="18px" />
                       <h6 class="mt-1px">3:30 pm</h6>
                     </div>
                   </div>
+
+                  <div v-if="action_type == 'contact'">
+                    <h6>+21 3523 25544</h6>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="flexStart gap-3">
+                <div class="relative w-[60px] h-[60px] rounded-2xl">
+                  <div v-for="(user, index) in user_list" :key="index" class="w-fit h-fit">
+                    <div
+                      v-if="item.members?.includes(user.email) && !user.email?.includes(user_email)"
+                      class="w-[60px] h-[60px]"
+                    >
+                      <NuxtImg
+                        :src="user.avatar ? user.avatar : '/default-avata.webp'"
+                        alt="Avatar.png"
+                        class="w-full h-full object-cover rounded-2xl"
+                      />
+
+                      <div
+                        v-if="user?.status === 'online'"
+                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
+                      ></div>
+                      <div
+                        v-else
+                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-error border-[2px] border-white rounded-full"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-[6px]">
+                  <h5 v-if="item?.members[0]?.includes(user_email)">{{ item?.members[1] }}</h5>
+                  <h5 v-else>{{ item?.members[0] }}</h5>
+
+                  <div v-if="action_type == 'chat'">
+                    <span
+                      class="text-xs"
+                      :class="item?._id?.includes(chatroom_show?._id!) ? 'text-primary font-semibold' : 'text-text'"
+                    >
+                      {{ truncateString(item?.latest_message, 30) }}
+                    </span>
+                  </div>
+
+                  <div v-if="action_type == 'call'">
+                    <div class="flexStart gap-1">
+                      <Icon name="iconamoon:arrow-bottom-left-1-light" class="bg-transparent text-accent" size="18px" />
+                      <h6 class="mt-1px">3:30 pm</h6>
+                    </div>
+                  </div>
+
                   <div v-if="action_type == 'contact'">
                     <h6>+21 3523 25544</h6>
                   </div>
@@ -364,7 +455,7 @@ const updateStatus = (user: User) => {
               </div>
 
               <div v-if="action_type == 'chat'">
-                <div class="lg:flex flex-col items-end gap-2 sm:hidden">
+                <div class="lg:flex flex-col items-end gap-2 xs:hidden">
                   <span>22/10/19</span>
                   <h6 class="text-accent">Seen</h6>
                 </div>
@@ -400,12 +491,7 @@ const updateStatus = (user: User) => {
           </template>
 
           <main v-else class="w-full h-fit mt-3 transition-all duration-300 ease-out">
-            <div class="flexCenter flex-col h-fit w-fit px-10 py-16">
-              <div class="w-[100px] h-[100px]">
-                <NuxtImg src="notfound_chatroom.png" class="w-full h-full object-cover" />
-              </div>
-              <p class="text-text text-lg font-semibold mt-4 text-center">You have not joined the chat room yet</p>
-            </div>
+            <ChatroomEmpty />
           </main>
         </main>
 
@@ -427,7 +513,7 @@ const updateStatus = (user: User) => {
 
       <div
         v-if="is_show.new_menu"
-        class="absolute top-0 left-0 w-screen h-screen bg-transparent"
+        class="absolute top-0 left-0 w-full h-full bg-transparent"
         @click="is_show.new_menu = !is_show.new_menu"
       ></div>
     </div>

@@ -77,7 +77,7 @@ const handleSearch = () => {
             <div
               v-for="user in user_list"
               id="user_item"
-              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
+              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] xs:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:shadow-inner"
             >
               <div id="pin" class="absolute top-0 right-9 transition-all duration-200 ease-linear">
                 <Icon name="eos-icons:push-pin-outlined" class="text-text" />

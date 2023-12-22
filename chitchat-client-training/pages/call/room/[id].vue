@@ -158,13 +158,14 @@ const createPeerConnection = async (data) => {
     if (!user_email.includes(participant)) {
       document.getElementById(participant).srcObject = remoteStream.value[participant];
     }
+
+    peerConnections.value[user_email].ontrack = (event) => {
+      event.streams[0].getTracks().forEach((track) => {
+        remoteStream.value[participant].addTrack(track)
+      })
+    }
   })
 
-  peerConnections.value[user_email].ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => {
-      remoteStream.value[participant].addTrack(track)
-    })
-  }
 
   if(!localStream) {
     localStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -174,6 +175,9 @@ const createPeerConnection = async (data) => {
   localStream.getTracks().forEach((track) => {
     peerConnections.value[user_email].addTrack(track, localStream)
   })
+
+  console.log(peerConnections.value);
+  console.log(remoteStream.value);
 
   peerConnections.value[user_email].onicecandidate = async (event) => {
     if(event.candidate) {
@@ -243,7 +247,7 @@ onBeforeUnmount(() => leaveChannel(user_email, room_id));
       <video id="local_video" class="w-full h-full" autoplay playsinline></video>
       <div
         id="remote_videos"
-        class="fixed top-10 left-10 grid lg:grid-cols-4 gap-4 md:grid-cols-3 sm:grid-cols-2 h-[200px]"
+        class="fixed top-10 left-10 grid lg:grid-cols-4 gap-4 md:grid-cols-3 xs:grid-cols-2 h-[200px]"
       ></div>
     </div>
 

@@ -1,15 +1,18 @@
 <script lang="ts" setup>
 import { ChatroomType, type Chatroom, type Message, type User } from '@/types/common';
+import { useModal } from 'vue-final-modal';
 import useApi from '@/plugins/api';
 import useSocketIO from '@/plugins/socket-io';
 import useGetMembers from '@/composables/use-get-members';
 import useGetMessages from '@/composables/use-get-messages';
 import getFormattedTimestamp from '@/helpers/getFormattedTimestamp';
+import ModalCallVideoDirect from '@/components/Modal/CallVideoDirect.vue';
 
-const { data, getSession } = useAuth();
+const { data, getSession }: any = useAuth();
 const session = await getSession();
 const $io = useSocketIO();
 const $api = useApi();
+const router = useRouter();
 const chatroom_show = ref<Chatroom | null>(null);
 const is_hidden = ref<boolean>(false);
 const message_content = ref<string>('');
@@ -21,10 +24,19 @@ const is_show = ref({
   menu: false,
 });
 
+const { open: openCallVideo, close: closeCallVideo } = useModal({
+  component: ModalCallVideoDirect,
+  attrs: {
+    onEndCallVideo() {
+      closeCallVideo();
+    },
+  },
+});
+
 const params = computed(() => ({
   chatroom_id: chatroom_show.value?._id,
 }));
-const { messages, isFetching: is_fetching_messages, isFetched: is_fetched_messages } = useGetMessages(params);
+const { messages, isLoading: is_loading_messages, isFetched: is_fetched_messages } = useGetMessages(params);
 const { members } = useGetMembers(params);
 
 watch(
@@ -56,7 +68,7 @@ onMounted(() => {
     member_list.value = updated_member_list;
   });
 
-  $io.on('send_message', (data: any) => {
+  $io.on('chat_message', (data: any) => {
     const message: Message = JSON.parse(data);
     if (message?.sender?.includes(user_email!)) return;
     message_list.value = [...message_list.value, message];
@@ -64,7 +76,7 @@ onMounted(() => {
 });
 
 const sendMessage = () => {
-  if (message_content.value === '' || chatroom_show.value?._id === '' || !user_email) return;
+  if (!message_content.value || !chatroom_show.value?._id || !user_email) return;
 
   const newMessage: Message = {
     chatroom_id: chatroom_show.value?._id!,
@@ -96,43 +108,75 @@ const hiddenNavigation = (value: boolean) => {
   alert(is_hidden);
   is_hidden.value = value;
 };
+
+const handleCall = (room_id: string) => {
+  if (!room_id) return;
+  router.push('/call/room/' + room_id);
+};
 </script>
 
 <template>
   <div class="grid grid-cols-12 h-screen w-full">
     <div
       :id="is_hidden ? 'hidden' : ''"
-      class="lg:block sm:hidden col-span-1 h-full w-full bg-nav_default transition-all duration-300 ease-linear"
+      class="lg:block xs:hidden col-span-1 h-full w-full bg-nav_default transition-all duration-300 ease-linear"
     >
       <Navigate @update:is_hidden="hiddenNavigation" />
     </div>
 
-    <main class="lg:col-span-10 sm:col-span-12 grid grid-cols-12 w-full h-full bg-chatroom_default">
+    <main class="lg:col-span-10 xs:col-span-12 grid grid-cols-12 w-full h-full bg-chatroom_default">
       <!-- Sidebar -->
-      <div class="md:block sm:hidden col-span-4 bg-sidebar_default w-full h-full">
+      <div class="md:block xs:hidden col-span-4 bg-sidebar_default w-full h-full">
         <ChatroomSidebar @update:chatroom_id="chatroomIdChange" />
       </div>
 
       <!-- Main Chat Area -->
-      <div class="md:col-span-8 sm:col-span-12 h-full w-full">
+      <div class="md:col-span-8 xs:col-span-12 h-full w-full">
         <div class="relative flex flex-col h-screen w-full pb-[94px]">
           <!-- Chat Header -->
           <div class="absolute top-[45px] left-0 lg:px-[45px] md:px-6 w-full">
             <header class="relative flexBetween px-[30px] py-[20px] bg-white w-full h-full">
-              <div class="flexCenter gap-5">
-                <div
-                  v-if="chatroom_show"
-                  class="w-[60px] h-[60px] rounded-2xl overflow-hidden transition-all duration-300 ease-out"
-                >
-                  <NuxtImg
-                    :src="chatroom_show?.avatar ? chatroom_show?.avatar : '/default-avata.webp'"
-                    alt="Avatar.png"
-                    class="w-full h-full object-cover"
-                  />
-                  <!-- <div
-                class="absolute top-1 right-1 w-[6px] h-[6px] border-white border-[1px] border-solid"
-                :class="{ item?.status === 'online' ? 'bg-accent' : 'bg-error' }"
-              ></div> -->
+              <div class="flexCenter gap-5 transition-all duration-300 ease-out">
+                <div v-if="chatroom_show" class="relative w-fit h-fit transition-all duration-300 ease-out">
+                  <div class="flexStart">
+                    <div class="relative w-fit h-fit rounded-2xl">
+                      <div v-if="chatroom_show?.type == ChatroomType.GROUP" class="w-[60px] h-[60px]">
+                        <NuxtImg
+                          :src="chatroom_show?.avatar ? chatroom_show?.avatar : '/default-avata.webp'"
+                          alt="Avatar.png"
+                          class="w-full h-full object-cover rounded-2xl"
+                        />
+                      </div>
+
+                      <div v-else class="h-fit w-fit">
+                        <div v-for="(member, index) in member_list" :key="index" class="w-fit h-fit">
+                          <div
+                            v-if="chatroom_show.members?.includes(member.email) && !member.email?.includes(user_email!)"
+                            class="w-[60px] h-[60px]"
+                          >
+                            <NuxtImg
+                              :src="member.avatar ? member.avatar : '/default-avata.webp'"
+                              alt="Avatar.png"
+                              class="w-full h-full object-cover rounded-2xl"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        v-if="chatroom_show?.status === 'online'"
+                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
+                      ></div>
+                      <div
+                        v-else
+                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-error border-[2px] border-white rounded-full"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else class="p-3 h-[60px] rounded-2xl overflow-hidden transition-all duration-300 ease-out">
+                  <NuxtImg src="/logo.png" alt="Logo.png" class="w-full h-full object-cover" />
                 </div>
 
                 <div
@@ -171,16 +215,29 @@ const hiddenNavigation = (value: boolean) => {
                   </div>
                 </div>
 
-                <div v-else class="flex-1 bg-transparent h-full w-[350px] transition-all duration-300 ease-out"></div>
-
                 <div class="flexBetween gap-4">
-                  <Button icon-name="ion:volume-high-sharp" secondary width="34px" height="34px" size="18px" />
-                  <Button icon-name="ph:magnifying-glass-bold" secondary width="34px" height="34px" size="18" />
+                  <Button
+                    icon-name="ion:volume-high-sharp"
+                    secondary
+                    width="34px"
+                    height="34px"
+                    size="18px"
+                    content="Volume"
+                  />
+                  <Button
+                    icon-name="ph:magnifying-glass-bold"
+                    secondary
+                    width="34px"
+                    height="34px"
+                    size="18"
+                    content="Search message"
+                    @click=""
+                  />
                 </div>
               </div>
 
               <div class="flexCenter">
-                <div class="flexCenter gap-2 lg:flex md:hidden">
+                <div class="flexCenter gap-2">
                   <Button icon-name="ph:phone" secondary width="34px" height="34px" size="18" content="Audio Call" />
                   <Button
                     icon-name="ep:video-camera"
@@ -189,6 +246,7 @@ const hiddenNavigation = (value: boolean) => {
                     height="34px"
                     size="18"
                     content="Video Call"
+                    @click="openCallVideo"
                   />
                   <Button
                     icon-name="iconoir:view-grid"
@@ -222,7 +280,7 @@ const hiddenNavigation = (value: boolean) => {
           <!-- Chat Messages -->
 
           <main
-            v-if="!is_fetched_messages || message_list.length > 0"
+            v-if="is_fetched_messages && message_list.length > 0"
             id="scrollbar"
             class="flex-1 w-full h-full lg:px-[45px] md:px-6 py-4 overflow-y-scroll scroll-smooth"
           >
@@ -272,7 +330,7 @@ const hiddenNavigation = (value: boolean) => {
                       </h6>
                     </div>
                     <div
-                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
+                      class="w-fit py-[8px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
                     >
                       {{ message?.content }}
                     </div>
@@ -286,7 +344,7 @@ const hiddenNavigation = (value: boolean) => {
 
                   <div class="flex flex-col gap-2">
                     <div
-                      class="w-fit py-[10px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
+                      class="w-fit py-[8px] px-4 bg-message_come rounded-br-3xl rounded-tr-3xl rounded-bl-3xl text-title transition-all duration-200 ease-out"
                     >
                       {{ message?.content }}
                     </div>
@@ -356,54 +414,11 @@ const hiddenNavigation = (value: boolean) => {
             >
           </main>
 
-          <main v-else class="flexCenter flex-1 w-full h-full">
-            <div class="flexCenter flex-col h-fit w-fit">
-              <div class="w-[160px] h-[160px]">
-                <NuxtImg src="notfound_chatroom.png" class="w-full h-full object-cover" />
-              </div>
-              <p class="text-text text-xl font-bold mt-4">Select a chat to read messages</p>
-            </div>
+          <main v-if="is_fetched_messages && message_list.length < 1" class="flexCenter flex-1 w-full h-full">
+            <ChatroomEmpty />
           </main>
 
-          <div v-if="is_fetching_messages" class="p-[24px] flex-1 w-full h-full transition-all duration-300 ease-out">
-            <div class="flex flex-col gap-4 p-4 w-full">
-              <div class="animate-pulse flex space-x-4">
-                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
-                <div class="w-72 space-y-2 py-1">
-                  <div class="h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
-                  <div class="w-3/4 h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
-                </div>
-              </div>
-
-              <div class="flexEnd ml-auto w-full animate-pulse flex space-x-4">
-                <div class="w-64 space-y-2 py-1">
-                  <div class="h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"></div>
-                  <div
-                    class="ml-auto w-3/4 h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"
-                  ></div>
-                </div>
-                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
-              </div>
-
-              <div class="animate-pulse flex space-x-4">
-                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
-                <div class="w-72 space-y-2 py-1">
-                  <div class="h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
-                  <div class="w-3/4 h-8 rounded-br-3xl rounded-tr-3xl rounded-bl-3xl bg-slate-300 rounded"></div>
-                </div>
-              </div>
-
-              <div class="flexEnd ml-auto w-full animate-pulse flex space-x-4">
-                <div class="w-64 space-y-2 py-1">
-                  <div class="h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"></div>
-                  <div
-                    class="ml-auto w-3/4 h-8 rounded-bl-3xl rounded-tl-3xl rounded-br-3xl bg-slate-300 rounded"
-                  ></div>
-                </div>
-                <div class="rounded-xl bg-slate-300 h-14 w-14"></div>
-              </div>
-            </div>
-          </div>
+          <LoadingMessage v-if="is_loading_messages" />
 
           <!-- Chat Input -->
           <footer class="absolute bottom-0 left-0 py-[20px] px-[45px] bg-white w-full border-r-[2px] border-gray-200">
@@ -457,7 +472,7 @@ const hiddenNavigation = (value: boolean) => {
       </div>
     </main>
 
-    <div class="lg:block sm:hidden col-span-1 bg-feature_default w-full h-full">
+    <div class="lg:block xs:hidden col-span-1 bg-feature_default w-full h-full">
       <FeatureList />
     </div>
   </div>

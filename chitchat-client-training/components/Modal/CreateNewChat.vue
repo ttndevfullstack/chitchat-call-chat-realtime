@@ -6,8 +6,9 @@ import useGetUsers from '@/composables/use-get-users';
 import useApi from '@/plugins/api';
 import type { BaseResponse } from '~/types/base-response';
 
-const emit = defineEmits(['create:newChat', 'confirm']);
+const emit = defineEmits(['confirm']);
 
+const { $createNewDirect }: any = useNuxtApp();
 const { data }: { data: any } = useAuth();
 const user_email = data?.value?.user?.email;
 const $api = useApi();
@@ -43,11 +44,6 @@ const handleSearch = () => {
   } else {
     user_list.value = users.value.filter((user: User) => user.email.includes(searchText));
   }
-};
-
-const handleClickChat = (email: string) => {
-  emit('create:newChat', email);
-  emit('confirm');
 };
 
 const addFriend = (email_friend: string) => {
@@ -111,7 +107,7 @@ const unFriend = (email_friend: string) => {
             <div
               v-for="user in user_list"
               id="user_item"
-              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] sm:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:bg-chatroom_default"
+              class="relative flexBetween w-full h-fit py-[10px] border-primary border-solid lg:px-[30px] xs:px-[10px] cursor-pointer transition-all duration-200 ease-out hover:bg-chatroom_default"
             >
               <div id="pin" class="absolute top-0 right-9 transition-all duration-200 ease-linear">
                 <Icon name="eos-icons:push-pin-outlined" class="text-text" />
@@ -132,7 +128,13 @@ const unFriend = (email_friend: string) => {
                     <div class="flex w-fit h-full mr-auto">
                       <div
                         class="flexCenter gap-1 h-fit w-fit px-2 py-1 cursor-pointer transition-all duration-200 ease-linear bg-[#4cb6f6] hover:bg-primary text-white rounded-full mr-2"
-                        @click="handleClickChat(user.email)"
+                        @click="
+                          $createNewDirect.$emit('create:newDirect', {
+                            email: user_email,
+                            members: [user_email, user.email],
+                            type: 'direct',
+                          })
+                        "
                       >
                         <Icon name="ic:outline-chat-bubble-outline" class="mt-[1px]" size="14px" />
                         <p class="text-xs text-current font-normal">Chat</p>
