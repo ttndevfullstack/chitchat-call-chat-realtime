@@ -1,25 +1,31 @@
 <script lang="ts" setup>
+// import 'tippy.js/dist/tippy.css';
+// import { Tippy } from 'vue-tippy';
 import { ChatroomType, type Chatroom, type Message, type User } from '@/types/common';
 import { useModal } from 'vue-final-modal';
-import useApi from '@/plugins/api';
-import useSocketIO from '@/plugins/socket-io';
+import { io as sio } from 'socket.io-client';
+
 import useGetMembers from '@/composables/use-get-members';
 import useGetMessages from '@/composables/use-get-messages';
 import getFormattedTimestamp from '@/helpers/getFormattedTimestamp';
 import ModalCallVideoDirect from '@/components/Modal/CallVideoDirect.vue';
+import useApi from '@/plugins/api';
 
 const { data, getSession }: any = useAuth();
-const session = await getSession();
-const $io = useSocketIO();
 const $api = useApi();
+const runtimeConfig = useRuntimeConfig();
+const ws_url = runtimeConfig.public.websocket;
+const io = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
 const router = useRouter();
 const chatroom_show = ref<Chatroom | null>(null);
+const session = await getSession();
 const is_hidden = ref<boolean>(false);
 const message_content = ref<string>('');
 const message_list = ref<Message[]>([]);
 const member_list = ref<User[]>([]);
 const message_status = ref<string>('');
 const user_email = data.value?.user?.email;
+
 const is_show = ref({
   menu: false,
 });
@@ -27,7 +33,7 @@ const is_show = ref({
 const { open: openCallVideo, close: closeCallVideo } = useModal({
   component: ModalCallVideoDirect,
   attrs: {
-    onEndCallVideo() {
+    onConfirm() {
       closeCallVideo();
     },
   },
@@ -51,15 +57,7 @@ watch(
 );
 
 onMounted(() => {
-  $io.on('connect', () => {
-    console.log('Socket connected', $io.id);
-  });
-
-  $io.on('disconnect', () => {
-    console.log('Socket disconnected', $io.id);
-  });
-
-  $io.on('user_status', (data: any) => {
+  io.on('user_status', (data: any) => {
     const user = JSON.parse(data);
     const updated_member_list = member_list.value.map((member) => {
       if (!member.email.includes(user?.email)) return member;
@@ -68,7 +66,7 @@ onMounted(() => {
     member_list.value = updated_member_list;
   });
 
-  $io.on('chat_message', (data: any) => {
+  io.on('chat_message', (data: any) => {
     const message: Message = JSON.parse(data);
     if (message?.sender?.includes(user_email!)) return;
     message_list.value = [...message_list.value, message];
@@ -109,9 +107,9 @@ const hiddenNavigation = (value: boolean) => {
   is_hidden.value = value;
 };
 
-const handleCall = (room_id: string) => {
-  if (!room_id) return;
-  router.push('/call/room/' + room_id);
+const handleClickCallVideo = (room: any) => {
+  if (!room) return alert('Select chatroom for call video');
+  router.push({ path: '/call/room/' + room._id });
 };
 </script>
 
@@ -146,6 +144,15 @@ const handleCall = (room_id: string) => {
                           alt="Avatar.png"
                           class="w-full h-full object-cover rounded-2xl"
                         />
+
+                        <div
+                          v-if="chatroom_show?.status === 'online'"
+                          class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
+                        ></div>
+                        <div
+                          v-else
+                          class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-error border-[2px] border-white rounded-full"
+                        ></div>
                       </div>
 
                       <div v-else class="h-fit w-fit">
@@ -159,18 +166,18 @@ const handleCall = (room_id: string) => {
                               alt="Avatar.png"
                               class="w-full h-full object-cover rounded-2xl"
                             />
+
+                            <div
+                              v-if="member?.status === 'online'"
+                              class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
+                            ></div>
+                            <div
+                              v-else
+                              class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-error border-[2px] border-white rounded-full"
+                            ></div>
                           </div>
                         </div>
                       </div>
-
-                      <div
-                        v-if="chatroom_show?.status === 'online'"
-                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-accent border-[2px] border-white rounded-full"
-                      ></div>
-                      <div
-                        v-else
-                        class="absolute top-[-1px] right-[-1px] w-[13px] h-[13px] bg-error border-[2px] border-white rounded-full"
-                      ></div>
                     </div>
                   </div>
                 </div>
@@ -246,7 +253,7 @@ const handleCall = (room_id: string) => {
                     height="34px"
                     size="18"
                     content="Video Call"
-                    @click="openCallVideo"
+                    @click="handleClickCallVideo(chatroom_show)"
                   />
                   <Button
                     icon-name="iconoir:view-grid"
@@ -358,18 +365,24 @@ const handleCall = (room_id: string) => {
                   v-if="!message_list[index - 1]?.sender.includes(message_list[index]?.sender)"
                   class="flexEnd w-full h-full gap-3"
                 >
-                  <div class="flex flex-col items-end gap-2">
+                  <div class="flex flex-col flex-1 items-end gap-2">
                     <div class="flexStart gap-4">
                       <h6 class="mt-[2px]">{{ message?.send_at.split(',')[0] }}</h6>
                       <h5 v-if="!message_list[index - 1]?.sender.includes(message_list[index]?.sender)">
                         {{ message?.sender }}
                       </h5>
                     </div>
-                    <div
-                      class="w-fit py-2 px-4 bg-message_send rounded-bl-3xl rounded-tl-3xl rounded-br-3xl text-white"
-                    >
-                      {{ message?.content }}
-                    </div>
+                    <tippy placement="left" animation theme="light" arrow="false" interactive>
+                      <div
+                        class="w-fit py-2 px-4 bg-message_send rounded-bl-3xl rounded-tl-3xl rounded-br-3xl text-white"
+                      >
+                        {{ message?.content }}
+                      </div>
+
+                      <template #content>
+                        <ChatroomHeaderMenu />
+                      </template>
+                    </tippy>
                   </div>
 
                   <div class="relative flexStart w-[50px] h-[50px] rounded-[20px] mr-2">
@@ -475,5 +488,7 @@ const handleCall = (room_id: string) => {
     <div class="lg:block xs:hidden col-span-1 bg-feature_default w-full h-full">
       <FeatureList />
     </div>
+
+    <ComingCall />
   </div>
 </template>

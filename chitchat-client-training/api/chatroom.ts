@@ -7,6 +7,10 @@ export class ChatroomAPI extends BaseApi {
     return this.post(this.prefix + '/all', params);
   }
 
+  getChatroomById(chatroom_id: any): Promise<any> {
+    return this.get(this.prefix + '/' + chatroom_id);
+  }
+
   getAllMember(chatroom_id: string): Promise<any> {
     return this.get(this.prefix + '/members/' + chatroom_id);
   }

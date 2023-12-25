@@ -71,25 +71,37 @@ export class ChannelService {
     const channel = await this.channelModel.findOne({ room_id: id });
     if (!channel) throw new NotFoundException('Channel not found');
 
-    const updated_participates = channel.participants.filter(
-      (participant) => !participant.includes(email),
-    );
+    if (channel.participants.length > 1) {
+      const updated_participates = channel.participants.filter(
+        (participant) => !participant.includes(email),
+      );
 
-    const updatedChannel = await this.channelModel.findOneAndUpdate(
-      { room_id: id },
-      { participants: updated_participates },
-      { new: true },
-    );
+      const updatedChannel = await this.channelModel.findOneAndUpdate(
+        { room_id: id },
+        { participants: updated_participates },
+        { new: true },
+      );
 
-    return {
-      status: 201,
-      success: true,
-      data: updatedChannel,
-    };
+      return {
+        status: 201,
+        success: true,
+        data: updatedChannel,
+      };
+    } else {
+      const response = await this.delete(id);
+
+      return {
+        status: 201,
+        success: true,
+        data: response.data,
+      };
+    }
   }
 
   public async delete(id: string) {
-    const deletedChanel = await this.channelModel.findOneAndDelete({ _id: id });
+    const deletedChanel = await this.channelModel.findOneAndDelete({
+      room_id: id,
+    });
     if (!deletedChanel) throw new NotFoundException('Chat room not found');
 
     return {

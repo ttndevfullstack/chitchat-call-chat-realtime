@@ -17,6 +17,10 @@ export default defineNuxtPlugin(() => {
         $on: emitter.on,
         $emit: emitter.emit,
       },
+      callVideo: {
+        $on: emitter.on,
+        $emit: emitter.emit,
+      },
     },
   };
 });

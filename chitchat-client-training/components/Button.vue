@@ -73,7 +73,7 @@ defineProps({
   </tippy>
 </template>
 
-<style>
+<style scoped>
 .dot {
   position: relative;
   width: fit-content;

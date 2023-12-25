@@ -35,3 +35,9 @@ export type Chatroom = {
   type: string;
   latest_message: string;
 };
+
+export type ComingCall = {
+  email: string;
+  avatar: string;
+  room_id: string;
+};

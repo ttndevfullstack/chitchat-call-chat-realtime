@@ -1,5 +1,6 @@
 import { resolve } from 'path';
 import { Server } from 'socket.io';
+import { initializeSocket } from './utils/socket-io';
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
@@ -34,9 +35,11 @@ export default defineNuxtConfig({
     layoutTransition: { name: 'layout', type: 'animation' },
   },
 
-  modules: ['nuxt-socket-io', '@sidebase/nuxt-auth', 'nuxt-icon', '@nuxt/image', '@pinia/nuxt'],
+  modules: ['nuxt-socket-io', '@sidebase/nuxt-auth', 'nuxt-icon', '@nuxt/image', '@pinia/nuxt', 'nuxt-svgo'],
 
-  // Sidebar Auth Config
+  /**
+   * Sidebar Auth Config
+   **/
   auth: {
     isEnabled: true,
     globalAppMiddleware: true,
@@ -46,16 +49,6 @@ export default defineNuxtConfig({
     },
   },
 
-  // Socket IO Config
-  io: {
-    sockets: [
-      {
-        name: 'main',
-        url: process.env.SOCKET_URL,
-      },
-    ],
-  },
-
   css: [
     resolve('./assets/scss/_variables.scss'),
     resolve('./assets/scss/animations/_transitions.scss'),
@@ -63,4 +56,8 @@ export default defineNuxtConfig({
     resolve('./assets/scss/tailwindDefault.scss'),
     'vue-final-modal/style.css',
   ],
+
+  svgo: {
+    autoImportPath: '~/assets/images/file-icons/',
+  },
 });

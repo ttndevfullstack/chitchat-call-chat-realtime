@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { User } from '~/types/common';
+import type { User } from '@/types/common';
 import { VueFinalModal } from 'vue-final-modal';
 import userGetUsers from '@/composables/use-get-users';
 

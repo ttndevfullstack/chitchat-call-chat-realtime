@@ -1,6 +1,6 @@
-import useApi from '@/plugins/api';
 import { useQuery } from 'vue-query';
 import type { UnwrapRef } from 'vue';
+import useApi from '@/plugins/api';
 
 export default function useGetChatroom(params?: UnwrapRef<any>, options?: any) {
   const $api = useApi();
@@ -9,7 +9,7 @@ export default function useGetChatroom(params?: UnwrapRef<any>, options?: any) {
     () => {
       const { chatroom_id } = params?.value;
       if (!chatroom_id) return;
-      return $api.chatroom.getChatroomById(params?.value);
+      return $api.chatroom.getAllChatroomById(params?.value);
     },
     {
       refetchOnWindowFocus: false,

@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { ChannelService } from 'src/channel/channel.service';
 import { ChatroomService } from 'src/chatroom/chatroom.service';
+import { UserService } from 'src/user/user.service';
 
 @WebSocketGateway({ namespace: 'events' })
 export class WebsocketGateway
@@ -17,6 +18,7 @@ export class WebsocketGateway
 {
   constructor(
     private readonly authService: AuthService,
+    private readonly userService: UserService,
     private readonly chatroomService: ChatroomService,
     private readonly channelService: ChannelService,
   ) {}
@@ -30,6 +32,7 @@ export class WebsocketGateway
     const token = client.handshake.query.token.toString();
     if (!token) return;
     const user = await this.authService.verifyTokenAndUpdateStatus(
+      client.id,
       token,
       'online',
     );
@@ -45,31 +48,24 @@ export class WebsocketGateway
     const token = client.handshake.query.token.toString();
     if (!token) return;
     const user = await this.authService.verifyTokenAndUpdateStatus(
+      client.id,
       token,
       'offline',
     );
     if (!user) return client.disconnect();
-    // await this.chatroomService.updateStatus(user?.email, 'offline');
-    // this.server.emit('user_status', JSON.stringify(user));
+    await this.chatroomService.updateStatus(user?.email, 'offline');
+    this.server.emit('user_status', JSON.stringify(user));
     client.disconnect();
     console.log(`Client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('signal')
-  public async handleSignal(@MessageBody() data: any) {
-    console.log('signal:', data);
-    this.server.emit('signal', data);
-  }
-
   @SubscribeMessage('offer')
   public async handleOffer(@MessageBody() data: any) {
-    console.log('offer:', data);
     this.server.emit('offer', data);
   }
 
   @SubscribeMessage('chat_message')
   public async handleSendMessage(created_message: any) {
-    console.log(created_message);
     this.server.emit('chat_message', created_message);
   }
 
@@ -111,5 +107,10 @@ export class WebsocketGateway
   @SubscribeMessage('message_from_peer')
   public async handleMessageFromPeer(@MessageBody() data: any) {
     this.server.emit('message_from_peer', data);
+  }
+
+  @SubscribeMessage('call_request')
+  public async handleCallRequest(@MessageBody() data: any) {
+    this.server.emit('call_request', data);
   }
 }

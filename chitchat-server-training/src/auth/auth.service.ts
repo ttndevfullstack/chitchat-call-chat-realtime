@@ -20,7 +20,11 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  public async verifyTokenAndUpdateStatus(token: string, status: string) {
+  public async verifyTokenAndUpdateStatus(
+    socket_id: string,
+    token: string,
+    status: string,
+  ) {
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET_KEY,
@@ -28,8 +32,10 @@ export class AuthService {
 
       const user = await this.userModel.findOneAndUpdate(
         { _id: payload.sub },
-        { status: status },
+        { socket_id, status },
       );
+
+      if (!user) return false;
       return user;
     } catch {
       return false;

@@ -13,6 +13,9 @@ export class User {
   @Prop({ unique: true, required: true })
   email: string;
 
+  @Prop({ type: String, default: '', unique: true })
+  socket_id: string;
+
   @Prop({ required: true })
   password: string;
 

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { User } from '~/types/common';
+import type { User } from '@/types/common';
 import { useToast } from 'vue-toastification';
 import { VueFinalModal } from 'vue-final-modal';
 import useGetUsers from '@/composables/use-get-users';
+
+import type { BaseResponse } from '@/types/base-response';
 import useApi from '@/plugins/api';
-import type { BaseResponse } from '~/types/base-response';
 
 const emit = defineEmits(['confirm']);
 

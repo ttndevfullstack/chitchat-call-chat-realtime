@@ -5,7 +5,7 @@ import type { BaseResponse } from '@/types/base-response';
 import { ChatroomType } from '@/types/common';
 import { Carousel, Slide, Pagination, Navigation } from 'vue3-carousel';
 import { truncateString } from '@/helpers/truncate-string';
-import useSocketIO from '@/plugins/socket-io';
+import { io as sio } from 'socket.io-client';
 import useGetChatrooms from '@/composables/use-get-chatrooms';
 import useGetFriends from '@/composables/use-get-friends';
 import useApi from '@/plugins/api';
@@ -14,7 +14,9 @@ const emit = defineEmits(['update:chatroom_id', 'update:is_hidden']);
 
 const { $createNewDirect, $createNewGroup, $deleteChatroom }: any = useNuxtApp();
 const { data }: { data: any } = useAuth();
-const $io = useSocketIO();
+const runtimeConfig = useRuntimeConfig();
+const ws_url = runtimeConfig.public.websocket;
+const $socket = sio(ws_url, { transports: ['websocket'], query: { token: data?.value?.jwt } });
 const $api = useApi();
 const user_email = data.value?.user?.email;
 const router = useRouter();
@@ -58,23 +60,9 @@ watch(
   { deep: true, immediate: true },
 );
 
-onMounted(() => {
-  $io.on('user_status', (data: any) => {
-    const user: User = JSON.parse(data);
-    updateStatus(user);
-  });
-
-  $io.on('chat_message', (data: any) => {
-    const message: Message = JSON.parse(data);
-    chatroom_list.value = chatroom_list.value?.map((chatroom) => {
-      if (chatroom?._id?.includes(message?.chatroom_id)) {
-        return { ...chatroom, latest_message: message.content };
-      }
-      return chatroom;
-    });
-  });
-});
-
+/**
+ * Emitter listening
+ */
 $createNewDirect.$on('create:newDirect', (data: any) => {
   createNewChatroom(data.email, data.members, data.type);
 });
@@ -85,9 +73,33 @@ $deleteChatroom.$on('delete:chatroom', () => {
   deleteChatroom(chatroom_show.value?._id!);
 });
 
-const createNewChatroom = (email: string, members: string[], type: string) => {
-  console.log('create');
+onMounted(() => {
+  $socket.on('connect', () => {
+    console.log('Socket connected', $socket?.id);
+  });
 
+  $socket.on('disconnect', () => {
+    console.log('Socket disconnected', $socket?.id);
+  });
+
+  $socket.on('user_status', (data: any) => {
+    const user: User = JSON.parse(data);
+    console.log(user);
+    updateStatus(user);
+  });
+
+  $socket.on('chat_message', (data: any) => {
+    const message: Message = JSON.parse(data);
+    chatroom_list.value = chatroom_list.value?.map((chatroom) => {
+      if (chatroom?._id?.includes(message?.chatroom_id)) {
+        return { ...chatroom, latest_message: message.content };
+      }
+      return chatroom;
+    });
+  });
+});
+
+const createNewChatroom = (email: string, members: string[], type: string) => {
   let new_chatroom;
 
   if (type === ChatroomType.DIRECT) {
@@ -176,9 +188,9 @@ const updateStatus = (user: User) => {
     if (!friend.email.includes(user?.email)) return friend;
     return { ...friend, status: user.status };
   });
-  const updated_user_status = user_list.value.map((user) => {
-    if (!user.email.includes(user?.email)) return user;
-    return { ...user, status: user.status };
+  const updated_user_status = user_list.value.map((user_item) => {
+    if (!user_item.email?.includes(user?.email)) return user_item;
+    return { ...user_item, status: user.status };
   });
   const updated_chatroom_status = chatroom_list.value.map((chatroom) => {
     if (chatroom.members.includes(user_email)) return chatroom;

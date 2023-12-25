@@ -1,6 +1,6 @@
-import useApi from '@/plugins/api';
 import { useQuery } from 'vue-query';
 import type { UnwrapRef } from 'vue';
+import useApi from '@/plugins/api';
 
 export default function useGetMessages(params?: UnwrapRef<any>, options?: any) {
   const $api = useApi();
